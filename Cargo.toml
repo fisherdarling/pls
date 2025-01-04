@@ -1,0 +1,21 @@
+[package]
+name = "teal"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+boring = { version = "4.13.0", features = [
+    "rpk",
+    "pq-experimental",
+    "kx-client-pq-supported",
+] }
+clap = { version = "4.5.23", features = ["derive"] }
+clap-verbosity-flag = "3.0.2"
+color-eyre = "0.6.3"
+iocraft = "0.6.0"
+tokio = { version = "1", default-features = false, features = [
+    "rt",
+    "macros",
+    "time",
+] }
+tokio-boring = "4.13.0"
