@@ -1,5 +1,5 @@
 [package]
-name = "teal"
+name = "pls"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,10 +12,21 @@ boring = { version = "4.13.0", features = [
 clap = { version = "4.5.23", features = ["derive"] }
 clap-verbosity-flag = "3.0.2"
 color-eyre = "0.6.3"
+hex = "0.4.3"
 iocraft = "0.6.0"
+jiff = { version = "0.1.21", features = ["serde"] }
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.135"
 tokio = { version = "1", default-features = false, features = [
     "rt",
     "macros",
     "time",
 ] }
 tokio-boring = "4.13.0"
+
+[patch.crates-io]
+boring = { path = "../../Opensource/boring/boring" }
+boring-sys = { path = "../../Opensource/boring/boring-sys" }
+
+[profile.release]
+debug = true
