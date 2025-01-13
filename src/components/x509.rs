@@ -1,7 +1,7 @@
 use iocraft::prelude::*;
 use jiff::{SpanRound, Unit, Zoned};
 
-use crate::x509::{
+use crate::simple_cert::{
     BasicConstraints, Issuer, Signature, SimpleCert, SimpleKeyUsage, SimplePublicKey,
     SimplePublicKeyKind, Subject, Validity,
 };
@@ -70,7 +70,7 @@ pub fn SubjectView(props: &SubjectProps) -> impl Into<AnyElement<'static>> {
         View(flex_direction: FlexDirection::Column) {
             View(gap: 1) {
                 Text(content: "subject:", color: TOP_LEVEL_COLOR) {}
-                Text(content: &props.subject.subject)
+                Text(content: &props.subject.name)
             }
             View(gap: 1, left: 4) {
                 #(dns)
@@ -101,11 +101,19 @@ fn ValidityView(props: &ValidityProps) -> impl Into<AnyElement<'static>> {
     let expires_in = now.until(props.validity.not_after).unwrap();
     let valid_in = now.until(props.validity.not_before).unwrap();
 
-    let round_config = if expires_in.total((Unit::Month, zoned_now.date())).unwrap() > 1.0 {
+    // if it's in years from now:
+    let round_config = if expires_in.total((Unit::Year, zoned_now.date())).unwrap() > 1.0 {
+        SpanRound::new()
+            .largest(jiff::Unit::Year)
+            .smallest(jiff::Unit::Month)
+            .relative(&zoned_now)
+    // if it's in months from now:
+    } else if expires_in.total((Unit::Month, zoned_now.date())).unwrap() > 1.0 {
         SpanRound::new()
             .largest(jiff::Unit::Month)
             .smallest(jiff::Unit::Day)
             .relative(&zoned_now)
+    // it's in days from now:
     } else {
         SpanRound::new()
             .largest(jiff::Unit::Day)
@@ -216,11 +224,9 @@ pub fn PublicKeyView(props: &PublicKeyProps) -> impl Into<AnyElement<'static>> {
                             }
                         }
                     }))
-                    View() {
-                        View(gap: 1) {
-                            Text(content: "point:") {}
-                            Text(content: pub_key.clone()) {}
-                        }
+                    View(gap: 1) {
+                        Text(content: "point:") {}
+                        Text(content: pub_key.clone()) {}
                     }
                 }
             }
@@ -276,7 +282,7 @@ pub fn IssuerView(props: &IssuerProps) -> impl Into<AnyElement<'static>> {
         View(flex_direction: FlexDirection::Column) {
             View() {
                 Text(content: "issuer: ", color: TOP_LEVEL_COLOR) {}
-                Text(content: format!("{}", props.issuer.subject))
+                Text(content: format!("{}", props.issuer.name))
             }
             #(props.id.clone().map(|id| {
                 element! {

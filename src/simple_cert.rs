@@ -13,28 +13,9 @@ use boring::{
         X509,
     },
 };
-use color_eyre::eyre::{eyre, Result};
+use color_eyre::eyre::Result;
 use jiff::{Timestamp, Zoned};
 use serde::Serialize;
-// use x509_parser::{
-//     prelude::{AlgorithmIdentifier, GeneralName, X509Certificate},
-//     public_key::PublicKey,
-// };
-
-/// Parse a PEM encoded X509 certificate
-pub fn parse_pem(data: &[u8]) -> Result<X509> {
-    X509::from_pem(data).map_err(|e| eyre!("Failed to parse PEM certificate: {}", e))
-}
-
-/// Parse a DER encoded X509 certificate
-pub fn parse_der(data: &[u8]) -> Result<X509> {
-    X509::from_der(data).map_err(|e| eyre!("Failed to parse DER certificate: {}", e))
-}
-
-/// Attempt to parse certificate data as either PEM or DER
-pub fn parse_auto(data: &[u8]) -> Result<X509> {
-    parse_pem(data).or_else(|_| parse_der(data))
-}
 
 #[derive(Default, Debug, Serialize)]
 pub struct SimpleCert {
@@ -42,8 +23,6 @@ pub struct SimpleCert {
     pub serial: String,
     pub issuer: Issuer,
     pub validity: Validity,
-    // pub serial_number: String,
-    // pub version: String,
     pub ski: Option<String>,
     pub aki: Option<String>,
     pub public_key: SimplePublicKey,
@@ -66,7 +45,7 @@ impl From<X509> for SimpleCert {
                 .authority_key_id()
                 .map(|ski| hex::encode(ski.as_slice())),
             issuer: Issuer {
-                subject: cert.issuer_name().print_ex(0).unwrap(),
+                name: cert.issuer_name().print_ex(0).unwrap(),
             },
             public_key: SimplePublicKey::from(public_key),
             serial: cert
@@ -143,7 +122,7 @@ impl Display for SimpleCert {
 
 #[derive(Default, Debug, Clone, Serialize)]
 pub struct Subject {
-    pub subject: String,
+    pub name: String,
     pub ski: Option<String>,
     pub sans: Sans,
 }
@@ -157,7 +136,7 @@ impl From<&X509> for Subject {
         let sans = Sans::from(san_vec);
 
         Subject {
-            subject: cert.subject_name().print_ex(0).unwrap(),
+            name: cert.subject_name().print_ex(0).unwrap(),
             ski: cert.subject_key_id().map(|ski| hex::encode(ski.as_slice())),
             sans,
         }
@@ -166,7 +145,7 @@ impl From<&X509> for Subject {
 
 #[derive(Default, Debug, Clone, Serialize)]
 pub struct Issuer {
-    pub subject: String,
+    pub name: String,
 }
 
 #[derive(Default, Debug, Clone, Serialize)]
@@ -180,6 +159,7 @@ pub struct Fingerprints {
 pub struct SimplePublicKey {
     pub bits: usize,
     pub curve: SimpleCruve,
+    #[serde(flatten)]
     pub kind: SimplePublicKeyKind,
 }
 

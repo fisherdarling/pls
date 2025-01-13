@@ -1,5 +1,6 @@
 mod args;
 mod components;
-mod x509;
+mod simple_cert;
+mod x509_parser;
 
 pub use args::{Cli, Command};
