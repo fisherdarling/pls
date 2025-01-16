@@ -14,14 +14,15 @@ use boring::{
     },
 };
 use color_eyre::eyre::Result;
-use jiff::{Timestamp, Zoned};
+use jiff::{Timestamp, Unit, Zoned};
 use serde::Serialize;
 
-#[derive(Default, Debug, Serialize)]
+#[derive(Debug, Serialize)]
 pub struct SimpleCert {
     pub subject: Subject,
     pub serial: String,
     pub issuer: Issuer,
+    #[serde(flatten)]
     pub validity: Validity,
     pub ski: Option<String>,
     pub aki: Option<String>,
@@ -30,11 +31,15 @@ pub struct SimpleCert {
     pub signature: Signature,
     pub extensions: Extensions,
     pub fingerprints: Fingerprints,
+    #[serde(skip)]
+    pub _cert: X509,
 }
 
 impl From<X509> for SimpleCert {
     fn from(cert: X509) -> Self {
         let subject = Subject::from(&cert);
+        let issuer = Issuer::from(&cert);
+        let validity = Validity::from(&cert);
         let public_key = cert.public_key().unwrap();
         let extensions = Extensions::default();
 
@@ -44,9 +49,7 @@ impl From<X509> for SimpleCert {
             aki: cert
                 .authority_key_id()
                 .map(|ski| hex::encode(ski.as_slice())),
-            issuer: Issuer {
-                name: cert.issuer_name().print_ex(0).unwrap(),
-            },
+            issuer,
             public_key: SimplePublicKey::from(public_key),
             serial: cert
                 .serial_number()
@@ -55,10 +58,7 @@ impl From<X509> for SimpleCert {
                 .to_hex_str()
                 .unwrap()
                 .to_string(),
-            validity: Validity {
-                not_before: parse_asn1_time_print(cert.not_before()).timestamp(),
-                not_after: parse_asn1_time_print(cert.not_after()).timestamp(),
-            },
+            validity,
             signature: Signature {
                 algorithm: cert
                     .signature_algorithm()
@@ -76,45 +76,32 @@ impl From<X509> for SimpleCert {
                 sha1: hex::encode(cert.digest(boring::hash::MessageDigest::sha1()).unwrap()),
                 md5: hex::encode(cert.digest(boring::hash::MessageDigest::md5()).unwrap()),
             },
+            _cert: cert,
         }
     }
 }
 
-// impl From<X509Certificate<'_>> for SimpleCert {
-//     fn from(cert: X509Certificate<'_>) -> Self {
-//         SimpleCert {
-//             subject: cert.subject.to_string(),
-//             sans: cert
-//                 .subject_alternative_name()
-//                 .ok()
-//                 .flatten()
-//                 .map(|sans| {
-//                     sans.value
-//                         .general_names
-//                         .into_iter()
-//                         .map(San::from)
-//                         .collect()
-//                 })
-//                 .map(Sans::from)
-//                 .unwrap_or_default(),
-//             serial: cert.serial.to_str_radix(16),
-//             validity: Validity {
-//                 not_before: Timestamp::from_second(cert.validity.not_before.timestamp()).unwrap(),
-//                 not_after: Timestamp::from_second(cert.validity.not_after.timestamp()).unwrap(),
-//             },
-//             ski: cert.subject_uid.map(|ski| hex::encode(ski.0.data)),
-//             public_key: cert.subject_pki.public_key().parsed().unwrap(),
-//             signature: (),
-//             extensions: (),
-//             fingerprints: (),
-//         }
-//     }
-// }
+impl Default for SimpleCert {
+    fn default() -> Self {
+        Self {
+            subject: Default::default(),
+            serial: Default::default(),
+            issuer: Default::default(),
+            validity: Default::default(),
+            ski: Default::default(),
+            aki: Default::default(),
+            public_key: Default::default(),
+            key_usage: Default::default(),
+            signature: Default::default(),
+            extensions: Default::default(),
+            fingerprints: Default::default(),
+            _cert: X509::builder().unwrap().build(),
+        }
+    }
+}
 
 impl Display for SimpleCert {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        // todo: swap between json and alternate output. E.g. `if f.alternate()`
-
         let pretty = serde_json::to_string_pretty(self).unwrap();
         write!(f, "{pretty}")
     }
@@ -146,6 +133,18 @@ impl From<&X509> for Subject {
 #[derive(Default, Debug, Clone, Serialize)]
 pub struct Issuer {
     pub name: String,
+    pub aki: Option<String>,
+}
+
+impl From<&X509> for Issuer {
+    fn from(cert: &X509) -> Self {
+        Issuer {
+            name: cert.issuer_name().print_ex(0).unwrap(),
+            aki: cert
+                .authority_key_id()
+                .map(|aki| hex::encode(aki.as_slice())),
+        }
+    }
 }
 
 #[derive(Default, Debug, Clone, Serialize)]
@@ -285,6 +284,23 @@ pub struct Signature {
 pub struct Validity {
     pub not_before: Timestamp,
     pub not_after: Timestamp,
+    pub expires_in: i64,
+    pub valid_in: i64,
+}
+
+impl From<&X509> for Validity {
+    fn from(cert: &X509) -> Self {
+        let not_before = parse_asn1_time_print(cert.not_before()).timestamp();
+        let not_after = parse_asn1_time_print(cert.not_after()).timestamp();
+        let now = Timestamp::now();
+
+        Validity {
+            not_before,
+            not_after,
+            expires_in: (not_after - now).total(Unit::Second).unwrap() as i64,
+            valid_in: (not_before - now).total(Unit::Second).unwrap() as i64,
+        }
+    }
 }
 
 #[derive(Default, Debug, Clone, Serialize)]

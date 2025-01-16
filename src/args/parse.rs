@@ -13,12 +13,15 @@ use crate::{components::x509::X509View, simple_cert::SimpleCert, x509_parser};
 /// one cert.
 #[derive(Default, Clone, Debug, Parser)]
 pub struct Parse {
-    /// File to read data from. Reads from stdin if omitted.
-    #[arg(short, long)]
-    file: Option<PathBuf>,
-    /// Output the results as JSON
-    #[arg(long)]
+    /// Output the results as JSON. Defaults to true if stdout is not a TTY.
+    #[arg(long, conflicts_with = "text")]
     json: bool,
+    /// Output the results as human-readable text. Defaults to true if stdout is
+    /// a TTY.
+    #[arg(long)]
+    text: bool,
+    /// File to read data from. Reads from stdin if omitted.
+    file: Option<PathBuf>,
 }
 
 impl Parse {
@@ -45,15 +48,22 @@ impl Parse {
             .into_iter()
             .map(SimpleCert::from);
 
-        if self.json {
+        let print_json = self.json || (!self.text && !io::stdout().is_terminal());
+        let print_text = self.text || (!self.json && io::stdout().is_terminal());
+
+        if print_json {
             let certs: Vec<_> = certs.collect();
             println!("{}", serde_json::to_string(&certs)?);
             return Ok(());
-        } else {
+        } else if print_text {
             element!(View(flex_direction: FlexDirection::Column, gap: 1) {
                 #(certs.into_iter().map(|cert| element!(X509View(cert))))
             })
             .print();
+        } else {
+            // todo: not sure this is possible to reach due to `conflicts_with`
+            // in the args
+            eprintln!("No output format specified");
         }
 
         Ok(())
