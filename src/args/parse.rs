@@ -4,9 +4,10 @@ use std::{fs, io::stdin};
 
 use clap::{CommandFactory, Parser};
 use color_eyre::eyre::Result;
-use iocraft::prelude::*;
 
-use crate::{components::x509::X509View, simple_cert::SimpleCert, x509_parser};
+use crate::{simple_cert::SimpleCert, x509_parser};
+
+use super::print_certs;
 
 /// Parse and report all x509 or DER certs from a file or stdin. The --json
 /// output for this command will always output an array, even if there is only
@@ -48,23 +49,7 @@ impl Parse {
             .into_iter()
             .map(SimpleCert::from);
 
-        let print_json = self.json || (!self.text && !io::stdout().is_terminal());
-        let print_text = self.text || (!self.json && io::stdout().is_terminal());
-
-        if print_json {
-            let certs: Vec<_> = certs.collect();
-            println!("{}", serde_json::to_string(&certs)?);
-            return Ok(());
-        } else if print_text {
-            element!(View(flex_direction: FlexDirection::Column, gap: 1) {
-                #(certs.into_iter().map(|cert| element!(X509View(cert))))
-            })
-            .print();
-        } else {
-            // todo: not sure this is possible to reach due to `conflicts_with`
-            // in the args
-            eprintln!("No output format specified");
-        }
+        print_certs(certs.collect(), self.text, self.json)?;
 
         Ok(())
     }
