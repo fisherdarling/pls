@@ -1,12 +1,15 @@
 use iocraft::prelude::*;
 use jiff::{SpanRound, Unit, Zoned};
 
-use crate::simple_cert::{
-    BasicConstraints, Issuer, Signature, SimpleCert, SimpleKeyUsage, SimplePublicKey,
-    SimplePublicKeyKind, Subject, Validity,
+use crate::{
+    commands::Format,
+    x509::cert::{
+        BasicConstraints, Issuer, Signature, SimpleCert, SimpleKeyUsage, SimplePublicKey,
+        SimplePublicKeyKind, Subject, Validity,
+    },
 };
 
-const TOP_LEVEL_COLOR: Color = Color::Magenta;
+pub const TOP_LEVEL_COLOR: Color = Color::Magenta;
 
 #[derive(Default, Props)]
 pub struct Props {
@@ -189,9 +192,9 @@ fn ValidityView(props: &ValidityProps) -> impl Into<AnyElement<'static>> {
 
 #[derive(Default, Props)]
 pub struct SurroundTextProps {
-    left: &'static str,
-    text: String,
-    right: &'static str,
+    pub left: &'static str,
+    pub text: String,
+    pub right: &'static str,
 }
 
 #[component]
@@ -402,4 +405,41 @@ pub fn UsageView(props: &UsageProps) -> impl Into<AnyElement<'static>> {
             // #(basic_constraints)
         }
     }
+}
+
+#[derive(Default, Props)]
+pub struct MultipleCertViewProps {
+    pub certs: Vec<SimpleCert>,
+}
+
+#[component]
+pub fn MultipleCertView(props: &MultipleCertViewProps) -> impl Into<AnyElement<'static>> {
+    element! {
+        View(flex_direction: FlexDirection::Column, gap: 1) {
+            #(props.certs.iter().cloned().enumerate().map(|(i, cert)| element!(
+                View(flex_direction: FlexDirection::Column) {
+                    Text(content: format!("---- cert #{} ----", i + 1), color: Color::White)
+                    X509View(cert)
+                }
+            )))
+        }
+    }
+}
+
+pub fn print_certs(certs: Vec<SimpleCert>, format: Format) -> color_eyre::Result<()> {
+    tracing::info!("printing {} certs in {format:?} format", certs.len());
+
+    match format {
+        Format::Text => {
+            element! {
+                MultipleCertView(certs)
+            }
+            .print();
+        }
+        Format::Json => {
+            println!("{}", serde_json::to_string_pretty(&certs)?);
+        }
+    }
+
+    Ok(())
 }

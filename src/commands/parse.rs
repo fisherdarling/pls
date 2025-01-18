@@ -3,53 +3,51 @@ use std::path::PathBuf;
 use std::{fs, io::stdin};
 
 use clap::{CommandFactory, Parser};
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{Context, Result};
 
-use crate::{simple_cert::SimpleCert, x509_parser};
+use crate::{components::x509::print_certs, x509::cert::SimpleCert, x509::parser::parse_auto};
 
-use super::print_certs;
+use super::{CommandExt, Format};
 
 /// Parse and report all x509 or DER certs from a file or stdin. The --json
 /// output for this command will always output an array, even if there is only
 /// one cert.
 #[derive(Default, Clone, Debug, Parser)]
 pub struct Parse {
-    /// Output the results as JSON. Defaults to true if stdout is not a TTY.
-    #[arg(long, conflicts_with = "text")]
-    json: bool,
-    /// Output the results as human-readable text. Defaults to true if stdout is
-    /// a TTY.
-    #[arg(long)]
-    text: bool,
     /// File to read data from. Reads from stdin if omitted.
     file: Option<PathBuf>,
 }
 
-impl Parse {
-    pub fn run(self) -> Result<()> {
+impl CommandExt for Parse {
+    async fn run(self, format: Format) -> Result<()> {
         let data = if let Some(path) = self.file {
-            fs::read(path)?
+            tracing::info!("parsing certificates from file: {}", path.display());
+            fs::read(&path).with_context(|| format!("Reading {}", path.display()))?
         } else {
+            tracing::info!("parsing certificates from stdin");
             let mut buffer = Vec::new();
 
             let stdin = stdin();
             if stdin.is_terminal() {
                 // todo: tracing / terminal support
-                eprintln!("stdin is a TTY, please provide a file or pipe data into stdin");
+                tracing::error!("stdin is a TTY, please provide a file or pipe data into stdin");
                 let mut clap_command = <crate::Cli as CommandFactory>::command();
                 clap_command.print_long_help().unwrap();
                 return Ok(()); // should this be an error?
             }
 
-            io::stdin().read_to_end(&mut buffer)?;
+            io::stdin()
+                .read_to_end(&mut buffer)
+                .context("Reading stdin")?;
             buffer
         };
 
-        let certs = x509_parser::parse_auto(&data)?
+        let certs = parse_auto(&data)
+            .context("parsing certificates")?
             .into_iter()
             .map(SimpleCert::from);
 
-        print_certs(certs.collect(), self.text, self.json)?;
+        print_certs(certs.collect(), format)?;
 
         Ok(())
     }

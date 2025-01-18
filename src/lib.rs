@@ -1,6 +1,8 @@
 mod args;
+mod commands;
 mod components;
-mod simple_cert;
-mod x509_parser;
+mod connection;
+mod x509;
 
 pub use args::{Cli, Command};
+pub use commands::CommandExt;

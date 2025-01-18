@@ -64,7 +64,7 @@ mod tests {
 
     #[test]
     fn simple_pem() {
-        let data = include_bytes!("../certs/lan-fish.pem");
+        let data = include_bytes!("../../certs/lan-fish.pem");
 
         let marker = find_cert_boundries_raw(data).next().unwrap();
         assert_eq!(marker, (0, data.len() - 1)); // -1 for the newline
@@ -73,7 +73,7 @@ mod tests {
 
     #[test]
     fn indented_pem() {
-        let data = include_bytes!("../certs/indented.pem");
+        let data = include_bytes!("../../certs/indented.pem");
         parse_pem(data).unwrap();
     }
 }

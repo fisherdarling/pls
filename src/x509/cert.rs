@@ -17,7 +17,7 @@ use color_eyre::eyre::Result;
 use jiff::{Timestamp, Unit, Zoned};
 use serde::Serialize;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SimpleCert {
     pub subject: Subject,
     pub serial: String,
@@ -157,6 +157,7 @@ pub struct Fingerprints {
 #[derive(Debug, Clone, Serialize)]
 pub struct SimplePublicKey {
     pub bits: usize,
+    #[serde(flatten)]
     pub curve: SimpleCruve,
     #[serde(flatten)]
     pub kind: SimplePublicKeyKind,
@@ -465,28 +466,28 @@ fn parse_asn1_time_print(time: &boring::asn1::Asn1TimeRef) -> Zoned {
 #[derive(Clone, Serialize)]
 pub struct SimpleCruve {
     #[serde(serialize_with = "serialize_nid")]
-    nid: Nid,
+    curve: Nid,
 }
 
 impl Default for SimpleCruve {
     fn default() -> Self {
-        SimpleCruve { nid: Nid::UNDEF }
+        SimpleCruve { curve: Nid::UNDEF }
     }
 }
 
 impl std::fmt::Debug for SimpleCruve {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{}", self.nid.long_name().unwrap())
+        write!(f, "{}", self.curve.long_name().unwrap())
     }
 }
 
 impl SimpleCruve {
     pub fn new(nid: Nid) -> Self {
-        Self { nid }
+        Self { curve: nid }
     }
 
     pub fn nid(&self) -> Nid {
-        self.nid
+        self.curve
     }
 }
 
