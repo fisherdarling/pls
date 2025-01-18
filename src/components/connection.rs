@@ -7,8 +7,9 @@ use serde::Serialize;
 
 use crate::{
     commands::Format,
-    components::x509::{MultipleCertView, SurroundText, TOP_LEVEL_COLOR},
+    components::x509::{MultipleCertView, SurroundText},
     connection::Connection,
+    theme::TOP_LEVEL_COLOR,
     x509::cert::SimpleCert,
 };
 

@@ -3,13 +3,12 @@ use jiff::{SpanRound, Unit, Zoned};
 
 use crate::{
     commands::Format,
+    theme::{HIGHLIGHT_COLOR, TOP_LEVEL_COLOR},
     x509::cert::{
         BasicConstraints, Issuer, Signature, SimpleCert, SimpleKeyUsage, SimplePublicKey,
         SimplePublicKeyKind, Subject, Validity,
     },
 };
-
-pub const TOP_LEVEL_COLOR: Color = Color::Magenta;
 
 #[derive(Default, Props)]
 pub struct Props {
@@ -41,7 +40,7 @@ pub fn SubjectView(props: &SubjectProps) -> impl Into<AnyElement<'static>> {
             View(gap: 1) {
                 Text(content: "dns:") {}
                 #(props.subject.sans.dns.iter().map(|dns| {
-                    element! { Text(content: dns, color: Color::Green, decoration: TextDecoration::Underline) }
+                    element! { Text(content: dns, color: HIGHLIGHT_COLOR, decoration: TextDecoration::Underline) }
                 }))
             }
         }
@@ -75,7 +74,7 @@ pub fn SubjectView(props: &SubjectProps) -> impl Into<AnyElement<'static>> {
                 Text(content: "subject:", color: TOP_LEVEL_COLOR) {}
                 Text(content: &props.subject.name)
             }
-            View(gap: 1, left: 4) {
+            View(left: 4, flex_direction: FlexDirection::Column) {
                 #(dns)
                 #(ip)
                 #(email)
@@ -164,24 +163,30 @@ fn ValidityView(props: &ValidityProps) -> impl Into<AnyElement<'static>> {
 
     let expired = now > props.validity.not_after;
 
-    let expired_text = expired.then(|| {
+    let is_valid_text = expired.then(|| {
         element! {
             Text(content: "expired", color: Color::Red, decoration: TextDecoration::Underline, weight: Weight::Bold)
+        }
+    }).unwrap_or_else(|| {
+        element! {
+            Text(content: "✅")
         }
     });
 
     element! {
         View(flex_direction: FlexDirection::Column) {
-            Text(content: "validity:", color: TOP_LEVEL_COLOR) {}
-            #(expired_text)
+            View(gap: 1) {
+                Text(content: "validity:", color: TOP_LEVEL_COLOR) {}
+                #(is_valid_text)
+            }
             View(left: 4, flex_direction: FlexDirection::Column) {
                 View(gap: 1, flex_direction: FlexDirection::Row) {
-                    Text(content: "not before:", color: Color::Blue)
+                    Text(content: "not before:")
                     Text(content: props.validity.not_before.to_string())
                     #(not_before_text)
                 }
                 View(gap: 1, flex_direction: FlexDirection::Row) {
-                    Text(content: "not after: ", color: Color::Blue)
+                    Text(content: "not after: ")
                     Text(content: props.validity.not_after.to_string())
                     #(expires_in_text)
                 }
@@ -195,6 +200,7 @@ pub struct SurroundTextProps {
     pub left: &'static str,
     pub text: String,
     pub right: &'static str,
+    pub color: Option<Color>,
 }
 
 #[component]
@@ -202,7 +208,11 @@ pub fn SurroundText(props: &SurroundTextProps) -> impl Into<AnyElement<'static>>
     element! {
         View() {
             Text(content: props.left)
-            Text(content: props.text.clone())
+            #(props.color.map(|color| element! {
+                Text(content: props.text.clone(), color: color)
+            }).unwrap_or_else(|| element! {
+                Text(content: props.text.clone())
+            }))
             Text(content: props.right)
         }
     }
@@ -223,7 +233,7 @@ pub fn PublicKeyView(props: &PublicKeyProps) -> impl Into<AnyElement<'static>> {
                         element! {
                             View() {
                                 Text(content: "group: ") {}
-                                Text(content: nid.short_name().unwrap())
+                                Text(content: nid.short_name().unwrap(), color: HIGHLIGHT_COLOR)
                             }
                         }
                     }))
@@ -373,32 +383,11 @@ pub fn UsageView(props: &UsageProps) -> impl Into<AnyElement<'static>> {
             }.into_any()).unwrap_or_else(|| element! {
                 Text(content: "key usage: ", color: TOP_LEVEL_COLOR)
             }.into_any()))
-            Text(content: key_usage_text, color: Color::Green)
+            Text(content: key_usage_text, color: HIGHLIGHT_COLOR)
         }
     };
 
-    // let basic_constraints = props.basic_constraints.clone().map(|bc| {
-    //     element! {
-    //         View() {
-    //             #(bc.critical.then(|| element! {
-    //             View() {
-    //                 Text(content: "key usage ")
-    //                 Text(content: "(critical)", color: Color::Red)
-    //                 Text(content: ": ")
-    //             }
-    //             }.into_any()).unwrap_or_else(|| element! {
-    //                 Text(content: "key usage: ")
-    //             }.into_any()))
-    //         }
-    //         //     Text(content: "usage:") {}
-    //         //     View(left: 4) {
-    //         //         Text(content: "ca:", color: Color::Green) {}
-    //         //         Text(content: bc.ca.to_string())
-    //         //     }
-    //         // }
-    //     }
-    // });
-
+    // todo: implement basic constraints
     element! {
         View(flex_direction: FlexDirection::Column) {
             #(key_usage)
@@ -417,8 +406,10 @@ pub fn MultipleCertView(props: &MultipleCertViewProps) -> impl Into<AnyElement<'
     element! {
         View(flex_direction: FlexDirection::Column, gap: 1) {
             #(props.certs.iter().cloned().enumerate().map(|(i, cert)| element!(
-                View(flex_direction: FlexDirection::Column) {
-                    Text(content: format!("---- cert #{} ----", i + 1), color: Color::White)
+                View(flex_direction: FlexDirection::Column, gap: 1) {
+                    #((props.certs.len() > 1).then(|| element! {
+                        SurroundText(left: "---- ", text: format!("cert #{}", i + 1), right: " ----", color: Color::Magenta)
+                    }))
                     X509View(cert)
                 }
             )))
