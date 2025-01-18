@@ -28,7 +28,7 @@ pub fn TlsConnectionView(props: &TlsConnectionProps) -> impl Into<AnyElement<'st
                     SurroundText(left: "(", text: format!("{:?}", props.tls.transport), right: ")")
                 }
             }
-            View(flex_direction: FlexDirection::Column, left: 4) {
+            View(flex_direction: FlexDirection::Column, margin_left: 4) {
                 #(if props.tls.valid {
                     element! {
                         Text(content: "✅ connection secure", color: Color::Green)
@@ -41,11 +41,13 @@ pub fn TlsConnectionView(props: &TlsConnectionProps) -> impl Into<AnyElement<'st
                 View(gap: 1) {
                     Text(content: "curve:")
                     Text(content: props.tls.curve.clone(), color: HIGHLIGHT_COLOR)
+                    #(props.tls.is_pqc.then(|| element! {
+                        Text(content: "(🔒 post-quantum secure)", color: Color::Green)
+                    }))
                 }
-                Text(content: format!("valid: {}", props.tls.valid))
                 View(gap: 1) {
-                    Text(content: format!("dns: {:.2?}", props.tls.time.dns))
-                    Text(content: format!("connect: {:.2?}", props.tls.time.connect))
+                    Text(content: format!("dns: {:.2?},", props.tls.time.dns))
+                    Text(content: format!("connect: {:.2?},", props.tls.time.connect))
                     Text(content: format!("secure: {:.2?}", props.tls.time.tls))
                 }
             }
@@ -67,14 +69,17 @@ pub fn print_tls_connection_with_certs(
     match format {
         Format::Text => {
             element! {
-                View(flex_direction: FlexDirection::Column, gap: 1) {
+                View(flex_direction: FlexDirection::Column, gap: 1, margin: 1) {
                     TlsConnectionView(tls: connection.tls)
-                    View(flex_direction: FlexDirection::Column) {
-                        Text(content: if connection.certs.len() > 1 {"certs:"} else {"cert:"}, color: TOP_LEVEL_COLOR)
-                        View(left: 4) {
-                            MultipleCertView(certs: connection.certs)
+                    // only print certs if there are any
+                    #((!connection.certs.is_empty()).then(|| element! {
+                        View(flex_direction: FlexDirection::Column) {
+                            Text(content: if connection.certs.len() > 1 {"certs:"} else {"cert:"}, color: TOP_LEVEL_COLOR)
+                            View(margin_left: 4) {
+                                MultipleCertView(certs: connection.certs)
+                            }
                         }
-                    }
+                    }))
                 }
             }
             .print();

@@ -27,6 +27,10 @@ pub struct Connect {
     #[arg(long)]
     chain: bool,
 
+    /// Do not print out any certificates.
+    #[arg(long)]
+    no_cert: bool,
+
     /// Use RPK (Raw Public Key) for certificate validation rather than WebPKI
     /// (x509).
     #[arg(long)]
@@ -101,6 +105,10 @@ impl CommandExt for Connect {
 
             if let Some(cert) = certs.first_mut() {
                 cert.apply_verify_result(tls.ssl().verify_result());
+            }
+
+            if self.no_cert {
+                certs.clear();
             }
 
             // todo: combine into a single function / output struct

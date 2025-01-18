@@ -6,8 +6,8 @@ use crate::{
     components::round_relative_human,
     theme::{HIGHLIGHT_COLOR, KEY_WIDTH, TOP_LEVEL_COLOR},
     x509::cert::{
-        BasicConstraints, Issuer, Signature, SimpleCert, SimpleKeyUsage, SimplePublicKey,
-        SimplePublicKeyKind, Subject, Validity,
+        BasicConstraints, Fingerprints, Issuer, Signature, SimpleCert, SimpleKeyUsage,
+        SimplePublicKey, SimplePublicKeyKind, Subject, Validity,
     },
 };
 
@@ -21,10 +21,15 @@ pub fn X509View(props: &Props) -> impl Into<AnyElement<'static>> {
     element! {
         View(flex_direction: FlexDirection::Column) {
             SubjectView(subject: props.cert.subject.clone())
+            View(gap: 1) {
+                Text(content: "serial:", color: TOP_LEVEL_COLOR) {}
+                Text(content: props.cert.serial.clone())
+            }
             ValidityView(validity: props.cert.validity.clone())
             PublicKeyView(public_key: props.cert.public_key.clone())
             UsageView(key_usage: props.cert.key_usage.clone(), basic_constraints: props.cert.extensions.basic_constraints.clone())
             IssuerView(issuer: props.cert.issuer.clone(), id: props.cert.aki.clone(), signature: props.cert.signature.clone())
+            FingerprintsView(fingerprints: props.cert.fingerprints.clone())
         }
     }
 }
@@ -50,9 +55,9 @@ pub fn SubjectView(props: &SubjectProps) -> impl Into<AnyElement<'static>> {
     let ip = (!props.subject.sans.ip.is_empty()).then(|| {
         element! {
             View(gap: 1) {
-                Text(content: "ip:", color: Color::Yellow) {}
+                Text(content: "ip:") {}
                 #(props.subject.sans.ip.iter().map(|ip| {
-                    element! { Text(content: ip.to_string(), decoration: TextDecoration::Underline) }
+                    element! { Text(content: ip.to_string(), decoration: TextDecoration::Underline, color: Color::Cyan) }
                 }))
             }
         }
@@ -75,14 +80,15 @@ pub fn SubjectView(props: &SubjectProps) -> impl Into<AnyElement<'static>> {
                 Text(content: "subject:", color: TOP_LEVEL_COLOR) {}
                 Text(content: &props.subject.name)
             }
-            View(left: 4, flex_direction: FlexDirection::Column) {
+            View(margin_left: 4, flex_direction: FlexDirection::Column) {
                 #(dns)
                 #(ip)
                 #(email)
             }
+            // todo: add serial under subject?
             #(props.subject.ski.clone().map(|ski| {
                 element! {
-                    View(left: 4) {
+                    View(margin_left: 4) {
                         Text(content: "ski: ") {}
                         Text(content: ski)
                     }
@@ -167,7 +173,7 @@ fn ValidityView(props: &ValidityProps) -> impl Into<AnyElement<'static>> {
                 Text(content: "validity:", color: TOP_LEVEL_COLOR) {}
                 #(is_valid_text)
             }
-            View(left: 4, flex_direction: FlexDirection::Column) {
+            View(margin_left: 4, flex_direction: FlexDirection::Column) {
                 View(gap: 1, flex_direction: FlexDirection::Row) {
                     Text(content: "not before:")
                     Text(content: props.validity.not_before.to_string())
@@ -262,7 +268,7 @@ pub fn PublicKeyView(props: &PublicKeyProps) -> impl Into<AnyElement<'static>> {
                 Text(content: "public key:", color: TOP_LEVEL_COLOR) {}
                 Text(content: format!("{} ({} bits)", props.public_key.curve.nid().short_name().unwrap(), props.public_key.bits))
             }
-            View(left: 4) {
+            View(margin_left: 4) {
                 #(public_key_element)
             }
         }
@@ -282,7 +288,7 @@ pub fn SignatureView(props: &SignatureProps) -> impl Into<AnyElement<'static>> {
                 Text(content: "signature: ") {}
                 Text(content: props.signature.algorithm.clone())
             }
-            View(left: 4, width: KEY_WIDTH) {
+            View(margin_left: 4, width: KEY_WIDTH) {
                 Text(content: props.signature.value.clone(), wrap: TextWrap::Wrap)
             }
         }
@@ -306,13 +312,13 @@ pub fn IssuerView(props: &IssuerProps) -> impl Into<AnyElement<'static>> {
             }
             #(props.id.clone().map(|id| {
                 element! {
-                    View(left: 4) {
+                    View(margin_left: 4) {
                         Text(content: "aki: ") {}
                         Text(content: id)
                     }
                 }
             }))
-            View(left: 4) {
+            View(margin_left: 4) {
                 SignatureView(signature: props.signature.clone())
             }
         }
@@ -404,6 +410,25 @@ pub fn UsageView(props: &UsageProps) -> impl Into<AnyElement<'static>> {
 }
 
 #[derive(Default, Props)]
+pub struct FingerprintsProps {
+    pub fingerprints: Fingerprints,
+}
+
+#[component]
+pub fn FingerprintsView(props: &FingerprintsProps) -> impl Into<AnyElement<'static>> {
+    element! {
+        View(flex_direction: FlexDirection::Column) {
+            Text(content: "fingerprints:", color: TOP_LEVEL_COLOR)
+            View(flex_direction: FlexDirection::Column, margin_left: 4) {
+                Text(content: format!("sha256: {}", props.fingerprints.sha256))
+                Text(content: format!("sha1:   {}", props.fingerprints.sha1))
+                Text(content: format!("md5:    {}", props.fingerprints.md5))
+            }
+        }
+    }
+}
+
+#[derive(Default, Props)]
 pub struct MultipleCertViewProps {
     pub certs: Vec<SimpleCert>,
 }
@@ -413,9 +438,9 @@ pub fn MultipleCertView(props: &MultipleCertViewProps) -> impl Into<AnyElement<'
     element! {
         View(flex_direction: FlexDirection::Column, gap: 1) {
             #(props.certs.iter().cloned().enumerate().map(|(i, cert)| element!(
-                View(flex_direction: FlexDirection::Column, gap: 1) {
+                View(flex_direction: FlexDirection::Column) {
                     #((props.certs.len() > 1).then(|| element! {
-                        SurroundText(left: "---- ", text: format!("cert #{}", i + 1), right: " ----", color: Color::Magenta)
+                        Text(content: format!("cert #{}:", i + 1), color: Color::Magenta)
                     }))
                     X509View(cert)
                 }
@@ -426,11 +451,12 @@ pub fn MultipleCertView(props: &MultipleCertViewProps) -> impl Into<AnyElement<'
 
 pub fn print_certs(certs: Vec<SimpleCert>, format: Format) -> color_eyre::Result<()> {
     tracing::info!("printing {} certs in {format:?} format", certs.len());
-
     match format {
         Format::Text => {
             element! {
-                MultipleCertView(certs)
+                View(margin: 1) {
+                    MultipleCertView(certs)
+                }
             }
             .print();
         }
