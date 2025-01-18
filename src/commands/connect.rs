@@ -86,8 +86,6 @@ impl CommandExt for Connect {
             tls: time_tls,
         };
 
-        tracing::error!("{:?}", tls.ssl().verify_result());
-
         let tls_connection = Connection::from((Transport::TCP, time, tls.ssl()));
         if !self.rpk {
             let mut certs = if self.chain {

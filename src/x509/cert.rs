@@ -30,6 +30,7 @@ pub struct SimpleCert {
     pub key_usage: SimpleKeyUsage,
     pub signature: Signature,
     pub extensions: Extensions,
+    #[serde(flatten)]
     pub fingerprints: Fingerprints,
     #[serde(skip)]
     pub _cert: X509,
