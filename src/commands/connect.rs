@@ -85,9 +85,12 @@ impl CommandExt for Connect {
             connect: time_connect,
             tls: time_tls,
         };
+
+        tracing::error!("{:?}", tls.ssl().verify_result());
+
         let tls_connection = Connection::from((Transport::TCP, time, tls.ssl()));
         if !self.rpk {
-            let certs = if self.chain {
+            let mut certs = if self.chain {
                 let chain = tls.ssl().peer_cert_chain().unwrap();
                 chain
                     .into_iter()
@@ -97,6 +100,10 @@ impl CommandExt for Connect {
             } else {
                 vec![SimpleCert::from(tls.ssl().peer_certificate().unwrap())]
             };
+
+            if let Some(cert) = certs.first_mut() {
+                cert.apply_verify_result(tls.ssl().verify_result());
+            }
 
             // todo: combine into a single function / output struct
             print_tls_connection_with_certs(

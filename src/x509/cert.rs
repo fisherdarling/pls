@@ -10,7 +10,7 @@ use boring::{
     pkey::{Id, PKey, Public},
     x509::{
         extension::{ExtendedKeyUsage, KeyUsage},
-        X509,
+        X509VerifyResult, X509,
     },
 };
 use color_eyre::eyre::Result;
@@ -33,6 +33,17 @@ pub struct SimpleCert {
     pub fingerprints: Fingerprints,
     #[serde(skip)]
     pub _cert: X509,
+}
+
+impl SimpleCert {
+    pub fn apply_verify_result(&mut self, verify_result: X509VerifyResult) {
+        if let Err(err) = verify_result {
+            self.validity.valid = Some(false);
+            self.validity.verify_result = Some(err.to_string());
+        } else {
+            self.validity.valid = Some(true);
+        }
+    }
 }
 
 impl From<X509> for SimpleCert {
@@ -287,6 +298,8 @@ pub struct Validity {
     pub not_after: Timestamp,
     pub expires_in: i64,
     pub valid_in: i64,
+    pub valid: Option<bool>,
+    pub verify_result: Option<String>,
 }
 
 impl From<&X509> for Validity {
@@ -300,6 +313,8 @@ impl From<&X509> for Validity {
             not_after,
             expires_in: (not_after - now).total(Unit::Second).unwrap() as i64,
             valid_in: (not_before - now).total(Unit::Second).unwrap() as i64,
+            valid: None,
+            verify_result: None,
         }
     }
 }

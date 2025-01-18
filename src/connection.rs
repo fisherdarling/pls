@@ -12,6 +12,8 @@ pub struct Connection {
     pub is_pqc: bool,
     pub version: String,
     pub transport: Transport,
+    pub valid: bool,
+    pub verify_result: Option<String>,
     pub time: Time,
 }
 
@@ -63,6 +65,8 @@ impl From<(Transport, Time, &SslRef)> for Connection {
             is_pqc,
             version: ssl.version_str().to_string(),
             transport,
+            valid: ssl.verify_result().is_ok(),
+            verify_result: ssl.verify_result().map_err(|v| v.to_string()).err(),
             time,
         }
     }

@@ -1,7 +1,7 @@
 use iocraft::{
     component, element,
-    prelude::{Text, View},
-    AnyElement, ElementExt, FlexDirection, Props,
+    prelude::{Text, TextDecoration, View},
+    AnyElement, Color, ElementExt, FlexDirection, Props,
 };
 use serde::Serialize;
 
@@ -29,23 +29,24 @@ pub fn TlsConnectionView(props: &TlsConnectionProps) -> impl Into<AnyElement<'st
                 }
             }
             View(flex_direction: FlexDirection::Column, left: 4) {
+                #(if props.tls.valid {
+                    element! {
+                        Text(content: "✅ connection secure", color: Color::Green)
+                    }
+                } else {
+                    element! {
+                        Text(content: format!("🚨 connection insecure: {}", props.tls.verify_result.clone().unwrap_or_default()), color: Color::Red, decoration: TextDecoration::Underline)
+                    }
+                })
                 View(gap: 1) {
                     Text(content: "curve:")
                     Text(content: props.tls.curve.clone(), color: HIGHLIGHT_COLOR)
                 }
-                View(flex_direction: FlexDirection::Row, gap: 1) {
-                    View(gap: 1) {
-                        Text(content: "dns:")
-                        Text(content: format!("{:.2?},", props.tls.time.dns))
-                    }
-                    View(gap: 1) {
-                        Text(content: "connect:")
-                        Text(content: format!("{:.2?},", props.tls.time.connect))
-                    }
-                    View(gap: 1) {
-                        Text(content: "secure:")
-                        Text(content: format!("{:.2?},", props.tls.time.tls))
-                    }
+                Text(content: format!("valid: {}", props.tls.valid))
+                View(gap: 1) {
+                    Text(content: format!("dns: {:.2?}", props.tls.time.dns))
+                    Text(content: format!("connect: {:.2?}", props.tls.time.connect))
+                    Text(content: format!("secure: {:.2?}", props.tls.time.tls))
                 }
             }
         }

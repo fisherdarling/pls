@@ -1,9 +1,10 @@
 use iocraft::prelude::*;
-use jiff::{SpanRound, Unit, Zoned};
+use jiff::Zoned;
 
 use crate::{
     commands::Format,
-    theme::{HIGHLIGHT_COLOR, TOP_LEVEL_COLOR},
+    components::round_relative_human,
+    theme::{HIGHLIGHT_COLOR, KEY_WIDTH, TOP_LEVEL_COLOR},
     x509::cert::{
         BasicConstraints, Issuer, Signature, SimpleCert, SimpleKeyUsage, SimplePublicKey,
         SimplePublicKeyKind, Subject, Validity,
@@ -103,32 +104,13 @@ fn ValidityView(props: &ValidityProps) -> impl Into<AnyElement<'static>> {
     let expires_in = now.until(props.validity.not_after).unwrap();
     let valid_in = now.until(props.validity.not_before).unwrap();
 
-    // if it's in years from now:
-    let round_config = if expires_in.total((Unit::Year, zoned_now.date())).unwrap() > 1.0 {
-        SpanRound::new()
-            .largest(jiff::Unit::Year)
-            .smallest(jiff::Unit::Month)
-            .relative(&zoned_now)
-    // if it's in months from now:
-    } else if expires_in.total((Unit::Month, zoned_now.date())).unwrap() > 1.0 {
-        SpanRound::new()
-            .largest(jiff::Unit::Month)
-            .smallest(jiff::Unit::Day)
-            .relative(&zoned_now)
-    // it's in days from now:
-    } else {
-        SpanRound::new()
-            .largest(jiff::Unit::Day)
-            .smallest(jiff::Unit::Minute)
-            .relative(&zoned_now)
-    };
-
+    let rounded_valid_in = round_relative_human(valid_in, zoned_now.clone());
     let not_before_text = if valid_in.signum() < 0 {
         // it's became valid in the past
         element! {
             SurroundText(
                 left: "(",
-                text: format!("{:#}", valid_in.round(round_config).unwrap()),
+                text: format!("{:#}", rounded_valid_in),
                 right: ")"
             )
         }
@@ -137,16 +119,17 @@ fn ValidityView(props: &ValidityProps) -> impl Into<AnyElement<'static>> {
         element! {
             SurroundText(
                 left: "(in ",
-                text: format!("{:#}", valid_in.round(round_config).unwrap()),
+                text: format!("{:#}", rounded_valid_in),
                 right: ")  "
             )
         }
     };
 
+    let rounded_expires_in = round_relative_human(expires_in, zoned_now);
     let expires_in_text = if expires_in.signum() < 0 {
         // it expired in the future, so it's still valid
         element! {
-            Text(content: "expired", color: Color::Red, decoration: TextDecoration::Underline, weight: Weight::Bold)
+            Text(content: format!("expired {:#}", rounded_expires_in), color: Color::Red, decoration: TextDecoration::Underline, weight: Weight::Bold)
         }
         .into_any()
     } else {
@@ -154,24 +137,29 @@ fn ValidityView(props: &ValidityProps) -> impl Into<AnyElement<'static>> {
         element! {
             SurroundText(
                 left: "(in ",
-                text: format!("{:#}", expires_in.round(round_config).unwrap()),
+                text: format!("{:#}", rounded_expires_in),
                 right: ")    "
             )
         }
         .into_any()
     };
 
-    let expired = now > props.validity.not_after;
+    let expired = now >= props.validity.not_after;
 
-    let is_valid_text = expired.then(|| {
-        element! {
-            Text(content: "expired", color: Color::Red, decoration: TextDecoration::Underline, weight: Weight::Bold)
-        }
-    }).unwrap_or_else(|| {
-        element! {
-            Text(content: "✅")
-        }
-    });
+    let is_valid_text = props
+        .validity
+        .valid
+        .unwrap_or(!expired)
+        .then(|| {
+            element! {
+                Text(content: "✅")
+            }
+        })
+        .unwrap_or_else(|| {
+            element! {
+                Text(content: format!("🚨 {}", props.validity.verify_result.clone().unwrap_or_default()), color: Color::Red, decoration: TextDecoration::Underline)
+            }
+        });
 
     element! {
         View(flex_direction: FlexDirection::Column) {
@@ -239,15 +227,33 @@ pub fn PublicKeyView(props: &PublicKeyProps) -> impl Into<AnyElement<'static>> {
                     }))
                     View(gap: 1) {
                         Text(content: "key:") {}
-                        View(width: 36) {
+                        View(width: KEY_WIDTH) {
                             Text(content: key.clone()) {}
                         }
                     }
                 }
             }
-            // (Nid::)
         }
-        _ => todo!(),
+        SimplePublicKeyKind::RSA {
+            modulus, exponent, ..
+        } => {
+            element! {
+                View(flex_direction: FlexDirection::Column) {
+                    View(gap: 1) {
+                        Text(content: "exponent:") {}
+                        Text(content: exponent.to_string())
+                    }
+                    View(gap: 1) {
+                        Text(content: "modulus:") {}
+                        View(width: KEY_WIDTH) {
+                            Text(content: modulus.clone())
+                        }
+                    }
+                }
+            }
+        }
+        // todo: the rest of the key types
+        key => todo!("{:?} not implemented", key),
     };
 
     element! {
@@ -276,7 +282,7 @@ pub fn SignatureView(props: &SignatureProps) -> impl Into<AnyElement<'static>> {
                 Text(content: "signature: ") {}
                 Text(content: props.signature.algorithm.clone())
             }
-            View(left: 4, width: 64) {
+            View(left: 4, width: KEY_WIDTH) {
                 Text(content: props.signature.value.clone(), wrap: TextWrap::Wrap)
             }
         }
