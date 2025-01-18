@@ -195,7 +195,7 @@ impl From<PKey<Public>> for SimplePublicKey {
                     p: dsa.p().to_hex_str().unwrap().to_string(),
                     q: dsa.q().to_hex_str().unwrap().to_string(),
                     g: dsa.g().to_hex_str().unwrap().to_string(),
-                    pub_key: dsa.pub_key().to_hex_str().unwrap().to_string(),
+                    key: dsa.pub_key().to_hex_str().unwrap().to_string(),
                 }
             }
             Id::EC => {
@@ -204,7 +204,7 @@ impl From<PKey<Public>> for SimplePublicKey {
                 SimplePublicKeyKind::EC {
                     // pub_key: hex::encode(ec.public_key().to_bytes(group, form, ctx)),
                     group: ec.group().curve_name(),
-                    pub_key: hex::encode(
+                    key: hex::encode(
                         ec.public_key()
                             .to_bytes(ec.group(), PointConversionForm::COMPRESSED, &mut bignum)
                             .unwrap(),
@@ -260,12 +260,12 @@ pub enum SimplePublicKeyKind {
         p: String,
         q: String,
         g: String,
-        pub_key: String,
+        key: String,
     },
     EC {
         #[serde(serialize_with = "serialize_ec_group")]
         group: Option<Nid>,
-        pub_key: String,
+        key: String,
     },
     Ed25519 {
         pub_key: String,

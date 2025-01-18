@@ -226,7 +226,7 @@ pub struct PublicKeyProps {
 #[component]
 pub fn PublicKeyView(props: &PublicKeyProps) -> impl Into<AnyElement<'static>> {
     let public_key_element = match &props.public_key.kind {
-        SimplePublicKeyKind::EC { group, pub_key } => {
+        SimplePublicKeyKind::EC { group, key } => {
             element! {
                 View(flex_direction: FlexDirection::Column) {
                     #(group.map(|nid| {
@@ -238,8 +238,10 @@ pub fn PublicKeyView(props: &PublicKeyProps) -> impl Into<AnyElement<'static>> {
                         }
                     }))
                     View(gap: 1) {
-                        Text(content: "point:") {}
-                        Text(content: pub_key.clone()) {}
+                        Text(content: "key:") {}
+                        View(width: 36) {
+                            Text(content: key.clone()) {}
+                        }
                     }
                 }
             }
@@ -251,9 +253,8 @@ pub fn PublicKeyView(props: &PublicKeyProps) -> impl Into<AnyElement<'static>> {
     element! {
         View(flex_direction: FlexDirection::Column) {
             View(gap: 1) {
-                Text(content: "pubkey:", color: TOP_LEVEL_COLOR) {}
+                Text(content: "public key:", color: TOP_LEVEL_COLOR) {}
                 Text(content: format!("{} ({} bits)", props.public_key.curve.nid().short_name().unwrap(), props.public_key.bits))
-                // 77W x 39D x 147H
             }
             View(left: 4) {
                 #(public_key_element)
@@ -377,11 +378,11 @@ pub fn UsageView(props: &UsageProps) -> impl Into<AnyElement<'static>> {
         View(gap: 1) {
             #(props.key_usage.critical.then(|| element! {
                 View(gap: 1) {
-                    Text(content: "key usage:", color: TOP_LEVEL_COLOR)
+                    Text(content: "usage:", color: TOP_LEVEL_COLOR)
                     Text(content: "(critical)")
                 }
             }.into_any()).unwrap_or_else(|| element! {
-                Text(content: "key usage: ", color: TOP_LEVEL_COLOR)
+                Text(content: "usage: ", color: TOP_LEVEL_COLOR)
             }.into_any()))
             Text(content: key_usage_text, color: HIGHLIGHT_COLOR)
         }

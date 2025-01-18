@@ -10,7 +10,7 @@ use url::Url;
 
 use crate::{
     components::connection::{print_tls_connection_with_certs, ConnectionWithCerts},
-    connection::{Connection, Transport},
+    connection::{Connection, Time, Transport},
     x509::cert::SimpleCert,
 };
 
@@ -22,6 +22,7 @@ use super::{CommandExt, Format};
 pub struct Connect {
     /// The host to connect to. Can be a hostname, IP address or URL.
     host: String,
+
     /// Outputs the certificate chain.
     #[arg(long)]
     chain: bool,
@@ -44,7 +45,9 @@ pub struct Connect {
 
 impl CommandExt for Connect {
     async fn run(mut self, format: Format) -> color_eyre::Result<()> {
+        let dns_start = Instant::now();
         let (hostname, addr) = parse_host(&self.host);
+        let time_dns = dns_start.elapsed();
 
         let connect_start = Instant::now();
         let stream = tokio::net::TcpStream::connect(addr).await?;
@@ -77,7 +80,12 @@ impl CommandExt for Connect {
         let tls = tokio_boring::connect(connector.configure()?, &hostname, stream).await?;
         let time_tls = tls_start.elapsed();
 
-        let tls_connection = Connection::from((Transport::TCP, time_connect, time_tls, tls.ssl()));
+        let time = Time {
+            dns: time_dns,
+            connect: time_connect,
+            tls: time_tls,
+        };
+        let tls_connection = Connection::from((Transport::TCP, time, tls.ssl()));
         if !self.rpk {
             let certs = if self.chain {
                 let chain = tls.ssl().peer_cert_chain().unwrap();

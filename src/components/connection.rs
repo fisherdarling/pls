@@ -1,7 +1,7 @@
 use iocraft::{
     component, element,
     prelude::{Text, View},
-    AnyElement, Color, ElementExt, FlexDirection, Props,
+    AnyElement, ElementExt, FlexDirection, Props,
 };
 use serde::Serialize;
 
@@ -9,7 +9,7 @@ use crate::{
     commands::Format,
     components::x509::{MultipleCertView, SurroundText},
     connection::Connection,
-    theme::TOP_LEVEL_COLOR,
+    theme::{HIGHLIGHT_COLOR, TOP_LEVEL_COLOR},
     x509::cert::SimpleCert,
 };
 
@@ -23,8 +23,7 @@ pub fn TlsConnectionView(props: &TlsConnectionProps) -> impl Into<AnyElement<'st
     element! {
         View(flex_direction: FlexDirection::Column) {
             View(gap: 1) {
-                Text(content: "connection:", color: TOP_LEVEL_COLOR)
-                Text(content: props.tls.version.clone())
+                Text(content: format!("{}:", props.tls.version), color: TOP_LEVEL_COLOR)
                 View() {
                     SurroundText(left: "(", text: format!("{:?}", props.tls.transport), right: ")")
                 }
@@ -32,12 +31,21 @@ pub fn TlsConnectionView(props: &TlsConnectionProps) -> impl Into<AnyElement<'st
             View(flex_direction: FlexDirection::Column, left: 4) {
                 View(gap: 1) {
                     Text(content: "curve:")
-                    Text(content: props.tls.curve.clone(), color: Color::Green)
+                    Text(content: props.tls.curve.clone(), color: HIGHLIGHT_COLOR)
                 }
-                View() {
-                    Text(content: format!("connected in {:.2?}", props.tls.time_connect))
-                    Text(content: ", ")
-                    Text(content: format!("secured in {:.2?}", props.tls.time_tls))
+                View(flex_direction: FlexDirection::Row, gap: 1) {
+                    View(gap: 1) {
+                        Text(content: "dns:")
+                        Text(content: format!("{:.2?},", props.tls.time.dns))
+                    }
+                    View(gap: 1) {
+                        Text(content: "connect:")
+                        Text(content: format!("{:.2?},", props.tls.time.connect))
+                    }
+                    View(gap: 1) {
+                        Text(content: "secure:")
+                        Text(content: format!("{:.2?},", props.tls.time.tls))
+                    }
                 }
             }
         }
@@ -60,7 +68,12 @@ pub fn print_tls_connection_with_certs(
             element! {
                 View(flex_direction: FlexDirection::Column, gap: 1) {
                     TlsConnectionView(tls: connection.tls)
-                    MultipleCertView(certs: connection.certs)
+                    View(flex_direction: FlexDirection::Column) {
+                        Text(content: if connection.certs.len() > 1 {"certs:"} else {"cert:"}, color: TOP_LEVEL_COLOR)
+                        View(left: 4) {
+                            MultipleCertView(certs: connection.certs)
+                        }
+                    }
                 }
             }
             .print();
