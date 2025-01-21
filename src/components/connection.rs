@@ -87,6 +87,11 @@ pub fn print_tls_connection_with_certs(
         Format::Json => {
             println!("{}", serde_json::to_string_pretty(&connection)?);
         }
+        Format::Pem => {
+            for cert in connection.certs {
+                print!("{}", cert.pem);
+            }
+        }
     }
 
     Ok(())

@@ -12,14 +12,17 @@ pub trait CommandExt {
 pub enum Format {
     Text,
     Json,
+    Pem,
 }
 
 impl Format {
-    pub fn from_args(text: bool, json: bool) -> Self {
-        let print_json = json || (!text && !std::io::stdout().is_terminal());
+    pub fn from_args(text: bool, json: bool, pem: bool) -> Self {
+        let print_json = json || (!text && !pem && !std::io::stdout().is_terminal());
 
         if print_json {
             Self::Json
+        } else if pem {
+            Self::Pem
         } else {
             Self::Text
         }

@@ -1,18 +1,19 @@
-use boring::x509::X509;
+use boring::{base64, x509::X509};
 use color_eyre::{eyre::eyre, Result};
-use memchr::{memchr_iter, memmem};
+use memchr::memmem;
+
+const BEGIN_MARKER: &[u8] = b"-----BEGIN CERTIFICATE-----";
+const END_MARKER: &[u8] = b"-----END CERTIFICATE-----";
 
 /// Parse a PEM encoded X509 certificate
 pub fn parse_pem(data: &[u8]) -> Result<Vec<X509>> {
-    // let Some((begin, end)) = find_cert_boundries_raw(data).next() else {
-    //     return Err(eyre!("No PEM certificate found"));
-    // };
-
     find_cert_boundries_raw(data)
         .map(|(begin, end)| {
-            let data = clean_cert_lines(&data[begin..=end]);
-            X509::from_pem(data.as_bytes())
-                .map_err(|e| eyre!("Failed to parse PEM certificate: {}", e))
+            let cert_base64 =
+                clean_cert_lines(&data[begin + BEGIN_MARKER.len()..=end - END_MARKER.len() - 1]);
+            let cert = base64::decode_block(&cert_base64)
+                .map_err(|e| eyre!("Failed to decode base64 certificate: {}", e))?;
+            X509::from_der(&cert).map_err(|e| eyre!("Failed to parse PEM certificate: {}", e))
         })
         .collect()
 }
@@ -30,32 +31,22 @@ pub fn parse_auto(data: &[u8]) -> Result<Vec<X509>> {
 }
 
 fn find_cert_boundries_raw(data: &[u8]) -> impl Iterator<Item = (usize, usize)> + '_ {
-    let begin_marker = b"-----BEGIN CERTIFICATE-----";
-    let end_marker = b"-----END CERTIFICATE-----";
-
-    let begin_markers = memmem::find_iter(data, begin_marker);
+    let begin_markers = memmem::find_iter(data, BEGIN_MARKER);
     begin_markers.filter_map(move |begin| {
-        let end = memmem::find(&data[begin..], end_marker)?;
-        Some((begin, begin + end + end_marker.len()))
+        let end = memmem::find(&data[begin..], END_MARKER)?;
+        Some((begin, begin + end + END_MARKER.len()))
     })
 }
 
 fn clean_cert_lines(data: &[u8]) -> String {
-    let mut start = 0;
-    let mut cert = String::with_capacity(data.len());
-    let lines = memchr_iter(b'\n', data);
+    let cert = String::from_iter(
+        data.iter()
+            .copied()
+            .filter(|b| !b.is_ascii_whitespace())
+            .map(char::from),
+    );
 
-    for line_idx in lines {
-        // todo: implement internal whitespace collapsing, e.g. removing
-        // the whitespace in `MIIDfzCCAwSgAwIBAgI    LdBXBHQEv\n`
-
-        let line = String::from_utf8_lossy(&data[start..line_idx]);
-        cert.push_str(line.trim());
-        cert.push('\n');
-        start = line_idx + 1;
-    }
-
-    cert
+    cert.replace("\\n", "")
 }
 
 #[cfg(test)]
@@ -68,12 +59,22 @@ mod tests {
 
         let marker = find_cert_boundries_raw(data).next().unwrap();
         assert_eq!(marker, (0, data.len() - 1)); // -1 for the newline
-        parse_pem(data).unwrap();
+        let certs = parse_pem(data).unwrap();
+        assert_eq!(certs.len(), 1);
     }
 
     #[test]
     fn indented_pem() {
         let data = include_bytes!("../../certs/indented.pem");
-        parse_pem(data).unwrap();
+        let certs = parse_pem(data).unwrap();
+        assert_eq!(certs.len(), 1);
+    }
+
+    #[test]
+    fn json_certs() {
+        let certs = include_bytes!("../../certs/pems.json");
+        let certs = parse_pem(certs).unwrap();
+
+        assert_eq!(certs.len(), 2);
     }
 }

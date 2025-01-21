@@ -13,13 +13,17 @@ pub struct Cli {
     pub verbose: clap_verbosity_flag::Verbosity,
 
     /// Output the results as JSON. Defaults to true if stdout is not a TTY.
-    #[arg(long, global = true, conflicts_with = "text")]
+    #[arg(long, global = true, conflicts_with = "text", conflicts_with = "pem")]
     json: bool,
 
     /// Output the results as human-readable text. Defaults to true if stdout is
     /// a TTY.
-    #[arg(long, global = true)]
+    #[arg(long, global = true, conflicts_with = "json", conflicts_with = "pem")]
     text: bool,
+
+    /// Output the results as PEM encoded data.
+    #[arg(long, global = true, conflicts_with = "json", conflicts_with = "text")]
+    pem: bool,
 
     #[command(subcommand)]
     command: Command, // the default command is `cert`
@@ -35,7 +39,7 @@ impl Cli {
     }
 
     pub fn format(&self) -> Format {
-        Format::from_args(self.text, self.json)
+        Format::from_args(self.text, self.json, self.pem)
     }
 }
 

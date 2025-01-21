@@ -463,6 +463,11 @@ pub fn print_certs(certs: Vec<SimpleCert>, format: Format) -> color_eyre::Result
         Format::Json => {
             println!("{}", serde_json::to_string_pretty(&certs)?);
         }
+        Format::Pem => {
+            for cert in certs {
+                print!("{}", cert.pem);
+            }
+        }
     }
 
     Ok(())

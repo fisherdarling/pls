@@ -32,6 +32,7 @@ pub struct SimpleCert {
     pub extensions: Extensions,
     #[serde(flatten)]
     pub fingerprints: Fingerprints,
+    pub pem: String,
     #[serde(skip)]
     pub _cert: X509,
 }
@@ -88,6 +89,7 @@ impl From<X509> for SimpleCert {
                 sha1: hex::encode(cert.digest(boring::hash::MessageDigest::sha1()).unwrap()),
                 md5: hex::encode(cert.digest(boring::hash::MessageDigest::md5()).unwrap()),
             },
+            pem: String::from_utf8(cert.to_pem().unwrap()).unwrap(),
             _cert: cert,
         }
     }
@@ -107,6 +109,7 @@ impl Default for SimpleCert {
             signature: Default::default(),
             extensions: Default::default(),
             fingerprints: Default::default(),
+            pem: Default::default(),
             _cert: X509::builder().unwrap().build(),
         }
     }
