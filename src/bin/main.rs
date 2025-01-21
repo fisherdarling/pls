@@ -1,6 +1,6 @@
 use std::io::IsTerminal;
 
-use pls::Cli;
+use pls_cli::Cli;
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
