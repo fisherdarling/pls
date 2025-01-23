@@ -10,11 +10,11 @@ use clap::{Parser, Subcommand};
 ///
 /// # Examples:
 ///
-/// parsing a certificate: pls parse ./cert.pem
+/// pls parse ./cert.pem
 ///
-/// connecting to a server: pls connect https://example.com
+/// pls parse ./cert.pem | jq
 ///
-/// json output: pls parse ./cert.pem --json
+/// pls connect https://example.com
 #[derive(Default, Debug, Parser)]
 #[command(name = "pls", version = "0.1", author = "Fisher")]
 pub struct Cli {

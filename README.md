@@ -171,12 +171,12 @@ make writing `jq` filters very easy.
 
 ## Why does this use boringssl?
 
-Because boringssl is awesome. If the library can't parse something that openssl, sorry about that 🤷‍♀️.
+Because boringssl is awesome. If the library can't parse something that openssl, sorry about that.
 
 ## Why the name `pls`?
 
 After doing 12 cert rotations involving modifying and looking at random PEM in yaml,
-you start begging openssl to just please do the right thing.
+you start begging openssl to just `pls` do the right thing.
 
 Why does openssl default to PEM output??? It's useless. And if you specify `-text` you still need to add `-noout`. What? Oh, and dealing with chains in a single file is clearly blasphemous.
 
@@ -192,4 +192,4 @@ If the curve is supported by boringssl, it's probably just not handled by `pls`.
 
 ## The library panics on my cert!
 
-The "parser" is rather opnionated on what's considered optional. If the cert is a useful variant of x509 v3, please open an issue and I'll see about fixing things / making it optional.
+The "parser" is rather opnionated (read: full of `unwrap()`s) on what's considered optional. If the cert is a useful variant of x509 v3, please open an issue and I'll see about fixing things / making it optional.

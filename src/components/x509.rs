@@ -20,11 +20,7 @@ pub struct Props {
 pub fn X509View(props: &Props) -> impl Into<AnyElement<'static>> {
     element! {
         View(flex_direction: FlexDirection::Column) {
-            SubjectView(subject: props.cert.subject.clone())
-            View(gap: 1) {
-                Text(content: "serial:", color: TOP_LEVEL_COLOR) {}
-                Text(content: props.cert.serial.clone())
-            }
+            SubjectView(subject: props.cert.subject.clone(), serial: props.cert.serial.clone())
             ValidityView(validity: props.cert.validity.clone())
             PublicKeyView(public_key: props.cert.public_key.clone())
             UsageView(key_usage: props.cert.key_usage.clone(), basic_constraints: props.cert.extensions.basic_constraints.clone())
@@ -37,6 +33,7 @@ pub fn X509View(props: &Props) -> impl Into<AnyElement<'static>> {
 #[derive(Default, Props)]
 pub struct SubjectProps {
     pub subject: Subject,
+    pub serial: Option<String>,
 }
 
 #[component]
@@ -85,12 +82,19 @@ pub fn SubjectView(props: &SubjectProps) -> impl Into<AnyElement<'static>> {
                 #(ip)
                 #(email)
             }
-            // todo: add serial under subject?
             #(props.subject.ski.clone().map(|ski| {
                 element! {
                     View(margin_left: 4) {
                         Text(content: "ski: ") {}
                         Text(content: ski)
+                    }
+                }
+            }))
+            #(props.serial.clone().map(|serial| {
+                element! {
+                    View(margin_left: 4) {
+                        Text(content: "serial: ") {}
+                        Text(content: serial)
                     }
                 }
             }))
@@ -152,7 +156,8 @@ fn ValidityView(props: &ValidityProps) -> impl Into<AnyElement<'static>> {
 
     let expired = now >= props.validity.not_after;
 
-    let is_valid_text = props
+    // todo: add time validity:
+    let _is_valid_text = props
         .validity
         .valid
         .unwrap_or(!expired)
@@ -167,23 +172,24 @@ fn ValidityView(props: &ValidityProps) -> impl Into<AnyElement<'static>> {
             }
         });
 
+    let verify_result_text = props.validity.verify_result.clone().map(|result| {
+        element! {
+            Text(content: format!("🚨 {result}"), color: Color::Red, decoration: TextDecoration::Underline)
+        }
+    });
+
     element! {
         View(flex_direction: FlexDirection::Column) {
-            View(gap: 1) {
-                Text(content: "validity:", color: TOP_LEVEL_COLOR) {}
-                #(is_valid_text)
+            #(verify_result_text)
+            View(gap: 1, flex_direction: FlexDirection::Row) {
+                Text(content: "not before:", color: TOP_LEVEL_COLOR)
+                Text(content: props.validity.not_before.to_string())
+                #(not_before_text)
             }
-            View(margin_left: 4, flex_direction: FlexDirection::Column) {
-                View(gap: 1, flex_direction: FlexDirection::Row) {
-                    Text(content: "not before:")
-                    Text(content: props.validity.not_before.to_string())
-                    #(not_before_text)
-                }
-                View(gap: 1, flex_direction: FlexDirection::Row) {
-                    Text(content: "not after: ")
-                    Text(content: props.validity.not_after.to_string())
-                    #(expires_in_text)
-                }
+            View(gap: 1, flex_direction: FlexDirection::Row) {
+                Text(content: "not after: ", color: TOP_LEVEL_COLOR)
+                Text(content: props.validity.not_after.to_string())
+                #(expires_in_text)
             }
         }
     }
