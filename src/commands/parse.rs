@@ -9,12 +9,13 @@ use crate::{components::x509::print_certs, x509::cert::SimpleCert, x509::parser:
 
 use super::{CommandExt, Format};
 
-/// Parse and report all x509 or DER certs from a file or stdin. The --json
-/// output for this command will always output an array, even if there is only
-/// one cert.
+/// Parse and report all discoverable x509 or DER certs from a file or stdin.
+/// The `--json` output for this command will always output an array, even if
+/// there is only one cert, i.e. chains are assumed. DER discovery is not well
+/// supported at the moment.
 #[derive(Default, Clone, Debug, Parser)]
 pub struct Parse {
-    /// File to read data from. Reads from stdin if omitted.
+    /// File to read data from. Defaults to `stdin`.
     file: Option<PathBuf>,
 }
 

@@ -1,22 +1,23 @@
 # pls
 
-`pls` is a human-first CLI tool for working with x509 certificates and other WebPKI/TLS
+`pls` is a human-first tool for working with x509 certificates and other WebPKI/TLS
 primitives. You ask it nicely to parse a file or get a server's certs and _It Just Works_.
 
 - [Installation](#installation)
 - [Examples](#examples)
-- [Features](#features)
 - [FAQ](#faq)
 
 ## TL;DR
 
-This:
+Reading a chain of certificates:
+
+`pls`:
 
 ```bash
 pls parse ./certs/chain.pem
 ```
 
-is much more memorable than this:
+`openssl`:
 
 ```bash
 openssl storeutl -noout -text -certs ./certs/chain.pem
@@ -32,9 +33,8 @@ hanging? What's this debug stuff?"
 Oh, and `pls` also handles certs mixed with yaml, json, or w/e just fine. Good
 luck getting that to work with `openssl`.
 
-And because it's been `n` decades since x509v3, there's json output with the
-`--json` flag. If you pipe `pls`' output into another cli tool, _json output is
-automatic_.
+And because it's 2025, there's json output with the `--json` flag. If you pipe
+`pls`' output into another cli tool, _json output is automatic_.
 
 ```bash
 pls parse ./certs/chain.pem | jq 'map(.subject.name)'
@@ -45,23 +45,22 @@ pls parse ./certs/chain.pem | jq 'map(.subject.name)'
 ]
 ```
 
-> We're still missing some fields in the json output, that's coming.
+> I'm still missing some fields in the json output, that's coming.
 
 Chains are assumed. Yes it's annoying to put a `.[0]|` in front of `jq` filters, but for that everything just works if you end up "accidentally" parsing a chain.
 
-# Installation
+It's also much more concise:
 
-Right now we only support Rust toolchain based installation:
-
+```sh
+$ openssl x509 -in ./certs/lan-fish.pem -text -noout | wc -l
+      73
+$ pls parse ./certs/lan-fish.pem --text | wc -l
+      25
 ```
-cargo install --locked pls-cli
-```
 
-# Features
+### Parsing certs in nearly any medium
 
-## Parsing certs in nearly any medium
-
-As long as the `----BEGIN` and `----END` "headers" exist somewhere in the file, and the base64 characters in those headers are valid, then `pls` can parse it.
+As long as the `----BEGIN` and `----END` "headers" exist somewhere in the file, and the base64 characters in those headers are valid, `pls` can parse it.
 
 `pls` will parse:
 
@@ -69,7 +68,17 @@ As long as the `----BEGIN` and `----END` "headers" exist somewhere in the file, 
 - certs spread throughout a yaml file with multiple indentations
 - certs in escaped json
 
-## Connect to a server and view its certificate (QUIC coming soon!)
+# Installation
+
+Right now `pls` only supports Rust toolchain based installation:
+
+```
+cargo install --locked --git https://github.com/fisherdarling/pls
+```
+
+> We're currently using a fork of
+> [`boring`](https://github.com/cloudflare/boring) which adds more support for
+> reading x509 fields.
 
 # Examples
 
@@ -83,7 +92,7 @@ pls parse ./certs/cloudflare.pem
 
 > Coloring is a little weird with [termshot](https://github.com/homeport/termshot).
 
-## Connecting to a site
+## Connect to a server and viewing its certificate (QUIC coming soon!)
 
 ```bash
 pls connect 1.1.1.1
@@ -172,3 +181,15 @@ you start begging openssl to just please do the right thing.
 Why does openssl default to PEM output??? It's useless. And if you specify `-text` you still need to add `-noout`. What? Oh, and dealing with chains in a single file is clearly blasphemous.
 
 And another gripe of mine is the usage of `ssl` in both `openssl` and `boringssl`. I refuse to put `ssl` in the name of this tool. There's a reason TLS exists. `pls` is close to `tls` while being short and sweet.
+
+## Why do you only support x509 v3?
+
+In my rather short experience working with certificates, I've only every seen v3 x509 certs. I believe the spec is 20 years old now. I'm not putting in effort to support older versions.
+
+## The library doesn't support a curve!
+
+If the curve is supported by boringssl, it's probably just not handled by `pls`. Please raise an issue.
+
+## The library panics on my cert!
+
+The "parser" is rather opnionated on what's considered optional. If the cert is a useful variant of x509 v3, please open an issue and I'll see about fixing things / making it optional.

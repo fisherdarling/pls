@@ -4,7 +4,17 @@ use crate::{
 };
 use clap::{Parser, Subcommand};
 
-/// The CLI app for manipulating x509 certificates and TLS data.
+/// `pls` is a human-first tool for working with x509 certificates and other
+/// WebPKI/TLS primitives. You ask it nicely to parse a file or get a server's
+/// certs and It Just Works.
+///
+/// # Examples:
+///
+/// parsing a certificate: pls parse ./cert.pem
+///
+/// connecting to a server: pls connect https://example.com
+///
+/// json output: pls parse ./cert.pem --json
 #[derive(Default, Debug, Parser)]
 #[command(name = "pls", version = "0.1", author = "Fisher")]
 pub struct Cli {
@@ -12,16 +22,16 @@ pub struct Cli {
     #[command(flatten)]
     pub verbose: clap_verbosity_flag::Verbosity,
 
-    /// Output the results as JSON. Defaults to true if stdout is not a TTY.
+    /// Output the results as JSON. Defaults to `true` if stdout is not a TTY.
     #[arg(long, global = true, conflicts_with = "text", conflicts_with = "pem")]
     json: bool,
 
-    /// Output the results as human-readable text. Defaults to true if stdout is
+    /// Output the results as human-readable text. Defaults to `true` if stdout is
     /// a TTY.
     #[arg(long, global = true, conflicts_with = "json", conflicts_with = "pem")]
     text: bool,
 
-    /// Output the results as PEM encoded data.
+    /// Output the results as PEM encoded data. Defaults to `false`.
     #[arg(long, global = true, conflicts_with = "json", conflicts_with = "text")]
     pem: bool,
 

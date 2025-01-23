@@ -31,7 +31,7 @@ pub struct Connect {
     #[arg(long)]
     no_cert: bool,
 
-    /// Use RPK (Raw Public Key) for certificate validation rather than WebPKI
+    /// [NOT YET IMPLEMENTED] Use RPK (Raw Public Key) for certificate validation rather than WebPKI
     /// (x509).
     #[arg(long)]
     rpk: bool,
