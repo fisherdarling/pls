@@ -1,6 +1,7 @@
 use jiff::{Span, SpanRound, Unit, Zoned};
 
 pub mod connection;
+pub mod keys;
 pub mod x509;
 
 pub(crate) fn round_relative_human(span: Span, relative_to: Zoned) -> Span {

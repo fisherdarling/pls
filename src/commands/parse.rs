@@ -4,8 +4,13 @@ use std::{fs, io::stdin};
 
 use clap::{CommandFactory, Parser};
 use color_eyre::eyre::{Context, Result};
+use serde::Serialize;
 
-use crate::{components::x509::print_certs, x509::cert::SimpleCert, x509::parser::parse_auto};
+use crate::{
+    components::x509::{print_certs, print_csrs},
+    pem::{parse_pems, ParsedPem},
+    x509::{SimpleCert, SimpleCsr},
+};
 
 use super::{CommandExt, Format};
 
@@ -43,13 +48,37 @@ impl CommandExt for Parse {
             buffer
         };
 
-        let certs = parse_auto(&data)
-            .context("parsing certificates")?
-            .into_iter()
-            .map(SimpleCert::from);
+        let mut parse_result = ParseResult::default();
 
-        print_certs(certs.collect(), format)?;
+        for pem in parse_pems(&data).flatten() {
+            match pem.into_parsed_pem() {
+                ParsedPem::Cert(cert) => parse_result.certs.push(SimpleCert::from(cert)),
+                ParsedPem::CertReq(csr) => parse_result.csrs.push(SimpleCsr::from(csr)),
+                _ => todo!(),
+            }
+        }
+
+        match format {
+            Format::Json => {
+                println!("{}", serde_json::to_string_pretty(&parse_result)?);
+            }
+            Format::Text | Format::Pem => {
+                if !parse_result.certs.is_empty() {
+                    print_certs(parse_result.certs, format)?;
+                }
+
+                if !parse_result.csrs.is_empty() {
+                    print_csrs(parse_result.csrs, format)?;
+                }
+            }
+        }
 
         Ok(())
     }
+}
+
+#[derive(Default, Serialize)]
+pub struct ParseResult {
+    pub certs: Vec<SimpleCert>,
+    pub csrs: Vec<SimpleCsr>,
 }

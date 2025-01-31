@@ -10,7 +10,7 @@ use crate::{
     components::x509::{MultipleCertView, SurroundText},
     connection::Connection,
     theme::{HIGHLIGHT_COLOR, TOP_LEVEL_COLOR},
-    x509::cert::SimpleCert,
+    x509::SimpleCert,
 };
 
 #[derive(Default, Props)]

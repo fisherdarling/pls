@@ -8,9 +8,10 @@ use boring::{
     ec::PointConversionForm,
     nid::Nid,
     pkey::{Id, PKey, Public},
+    stack::Stack,
     x509::{
         extension::{ExtendedKeyUsage, KeyUsage},
-        X509VerifyResult, X509,
+        GeneralName, X509Req, X509VerifyResult, X509,
     },
 };
 use color_eyre::eyre::Result;
@@ -131,15 +132,27 @@ pub struct Subject {
 
 impl From<&X509> for Subject {
     fn from(cert: &X509) -> Self {
-        let san_vec: Vec<_> = cert
-            .subject_alt_names()
-            .map(|stack| stack.into_iter().map(San::from).collect())
-            .unwrap_or_default();
-        let sans = Sans::from(san_vec);
+        let sans = cert.subject_alt_names().map(Sans::from).unwrap_or_default();
 
         Subject {
             name: cert.subject_name().print_ex(0).unwrap(),
             ski: cert.subject_key_id().map(|ski| hex::encode(ski.as_slice())),
+            sans,
+        }
+    }
+}
+
+impl From<&X509Req> for Subject {
+    fn from(csr: &X509Req) -> Self {
+        let sans = csr
+            .subject_alt_names()
+            .map(|opt_sans| opt_sans.map(Sans::from))
+            .unwrap_or_default()
+            .unwrap_or_default();
+
+        Subject {
+            name: csr.subject_name().print_ex(0).unwrap(),
+            ski: None,
             sans,
         }
     }
@@ -360,6 +373,13 @@ impl From<Vec<San>> for Sans {
     }
 }
 
+impl From<Stack<GeneralName>> for Sans {
+    fn from(stack: Stack<GeneralName>) -> Self {
+        let sans: Vec<_> = stack.into_iter().map(San::from).collect();
+        Sans::from(sans)
+    }
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum San {
@@ -388,24 +408,6 @@ impl From<boring::x509::GeneralName> for San {
         }
     }
 }
-
-// impl From<GeneralName<'_>> for San {
-//     fn from(value: GeneralName<'_>) -> Self {
-//         match value {
-//             GeneralName::RFC822Name(email) => San::Email(email.to_string()),
-//             GeneralName::DNSName(host) => San::Dns(host.to_string()),
-//             GeneralName::URI(uri) => San::Uri(uri.to_string()),
-//             GeneralName::IPAddress(ip) => San::Ip(if ip.len() == 4 {
-//                 IpAddr::from(<[u8; 4]>::try_from(ip).unwrap())
-//             } else if ip.len() == 16 {
-//                 IpAddr::from(<[u8; 16]>::try_from(ip).unwrap())
-//             } else {
-//                 panic!()
-//             }),
-//             _ => panic!(),
-//         }
-//     }
-// }
 
 #[derive(Default, Debug, Clone, Serialize)]
 pub struct Extensions {
@@ -507,6 +509,49 @@ impl SimpleCruve {
 
     pub fn nid(&self) -> Nid {
         self.curve
+    }
+}
+
+#[derive(Clone, Serialize)]
+pub struct SimpleCsr {
+    pub subject: Subject,
+    pub public_key: SimplePublicKey,
+    pub signature: Signature,
+    pub pem: String,
+    #[serde(skip)]
+    pub _csr: X509Req,
+}
+
+impl Default for SimpleCsr {
+    fn default() -> Self {
+        Self {
+            subject: Default::default(),
+            public_key: Default::default(),
+            signature: Default::default(),
+            pem: Default::default(),
+            _csr: X509Req::builder().unwrap().build(),
+        }
+    }
+}
+
+impl From<X509Req> for SimpleCsr {
+    fn from(csr: X509Req) -> Self {
+        let subject = Subject::from(&csr);
+        let public_key = SimplePublicKey::from(csr.public_key().unwrap());
+        let (sig_alg, sig) = csr.signature().unwrap();
+
+        let csr = SimpleCsr {
+            subject,
+            public_key,
+            signature: Signature {
+                algorithm: sig_alg.object().nid().short_name().unwrap().to_string(),
+                value: hex::encode(sig.as_slice()),
+            },
+            pem: String::from_utf8(csr.to_pem().unwrap()).unwrap(),
+            _csr: csr,
+        };
+
+        csr
     }
 }
 

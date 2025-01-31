@@ -11,7 +11,7 @@ use url::Url;
 use crate::{
     components::connection::{print_tls_connection_with_certs, ConnectionWithCerts},
     connection::{Connection, Time, Transport},
-    x509::cert::SimpleCert,
+    x509::SimpleCert,
 };
 
 use super::{CommandExt, Format};
