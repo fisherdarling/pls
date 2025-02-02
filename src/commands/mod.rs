@@ -27,4 +27,12 @@ impl Format {
             Self::Text
         }
     }
+
+    /// Returns `true` if the format is [`Json`].
+    ///
+    /// [`Json`]: Format::Json
+    #[must_use]
+    pub fn is_json(&self) -> bool {
+        matches!(self, Self::Json)
+    }
 }

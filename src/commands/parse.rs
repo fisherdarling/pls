@@ -4,13 +4,8 @@ use std::{fs, io::stdin};
 
 use clap::{CommandFactory, Parser};
 use color_eyre::eyre::{Context, Result};
-use serde::Serialize;
 
-use crate::{
-    components::x509::{print_certs, print_csrs},
-    pem::{parse_pems, ParsedPem},
-    x509::{SimpleCert, SimpleCsr},
-};
+use crate::{components::print_pems, pem::parse_pems};
 
 use super::{CommandExt, Format};
 
@@ -48,37 +43,9 @@ impl CommandExt for Parse {
             buffer
         };
 
-        let mut parse_result = ParseResult::default();
-
-        for pem in parse_pems(&data).flatten() {
-            match pem.into_parsed_pem() {
-                ParsedPem::Cert(cert) => parse_result.certs.push(SimpleCert::from(cert)),
-                ParsedPem::CertReq(csr) => parse_result.csrs.push(SimpleCsr::from(csr)),
-                _ => todo!(),
-            }
-        }
-
-        match format {
-            Format::Json => {
-                println!("{}", serde_json::to_string_pretty(&parse_result)?);
-            }
-            Format::Text | Format::Pem => {
-                if !parse_result.certs.is_empty() {
-                    print_certs(parse_result.certs, format)?;
-                }
-
-                if !parse_result.csrs.is_empty() {
-                    print_csrs(parse_result.csrs, format)?;
-                }
-            }
-        }
+        let pems = parse_pems(&data).flatten();
+        print_pems(format, pems)?;
 
         Ok(())
     }
-}
-
-#[derive(Default, Serialize)]
-pub struct ParseResult {
-    pub certs: Vec<SimpleCert>,
-    pub csrs: Vec<SimpleCsr>,
 }
