@@ -1,5 +1,5 @@
 mod args;
-mod commands;
+pub mod commands;
 mod components;
 mod connection;
 mod pem;

@@ -9,14 +9,27 @@ use crate::{components::print_pems, pem::parse_pems};
 
 use super::{CommandExt, Format};
 
-/// Parse and report all discoverable x509 or DER certs from a file or stdin.
-/// The `--json` output for this command will always output an array, even if
-/// there is only one cert, i.e. chains are assumed. DER discovery is not well
-/// supported at the moment.
+/// Parse and report all discoverable x509 or DER encoded entities from a file
+/// or stdin. The `--json` output for this command will output an object of:
+///
+/// ```
+/// { certs: ..., csrs: ..., private_keys: ... }
+/// ```
+///
+/// Each of the fields will be an array of objects, even if there is only one
+/// e.g. cert. DER discovery is not well supported at the moment.
+///
+/// Supports:
+///
+/// 1. x509 certs
+/// 2. x509 csrs
+/// 3. private keys
+/// 4. public keys
+/// 5. DER encoded entities (kinda)
 #[derive(Default, Clone, Debug, Parser)]
 pub struct Parse {
     /// File to read data from. Defaults to `stdin`.
-    file: Option<PathBuf>,
+    pub file: Option<PathBuf>,
 }
 
 impl CommandExt for Parse {

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::{borrow::Cow, convert::Infallible, ops::Range, str::FromStr, sync::LazyLock};
 
 use boring::{
@@ -220,7 +221,7 @@ mod tests {
 
     #[test]
     fn single_pem() {
-        let data = include_bytes!("../../test-data/lan-fish.pem");
+        let data = include_bytes!("../../test-data/certs/lan-fish.pem");
 
         let mut pems: Vec<_> = extract_raw_pems(data)
             .flatten()
@@ -240,7 +241,7 @@ mod tests {
 
     #[test]
     fn indented_pem() {
-        let data = include_bytes!("../../test-data/indented.pem");
+        let data = include_bytes!("../../test-data/certs/indented.pem");
 
         let mut pems: Vec<_> = extract_raw_pems(data)
             .flatten()
@@ -260,7 +261,7 @@ mod tests {
 
     #[test]
     fn chain() {
-        let data = include_bytes!("../../test-data/chain.pem");
+        let data = include_bytes!("../../test-data/certs/chain.pem");
 
         let certs: Vec<SimpleCert> = extract_raw_pems(data)
             .flatten()
@@ -287,7 +288,7 @@ mod tests {
 
     #[test]
     fn json_chain() {
-        let data = include_bytes!("../../test-data/pems.json");
+        let data = include_bytes!("../../test-data/certs/pems.json");
 
         let certs: Vec<SimpleCert> = extract_raw_pems(data)
             .flatten()
@@ -345,8 +346,7 @@ mod tests {
     #[test]
     // https://en.wikipedia.org/wiki/Certificate_signing_request
     fn wikipedia_csr() {
-        // let data = include_bytes!("../../test-data/csr/wikipedia-csr.pem");
-        let data = include_bytes!("../../test-data/csr/test.csr");
+        let data = include_bytes!("../../test-data/csr/wikipedia-csr.pem");
 
         let mut pems: Vec<_> = extract_raw_pems(data)
             .flatten()
@@ -359,9 +359,6 @@ mod tests {
 
         let csr = parsed.into_cert_req().unwrap();
         let simple_csr = crate::x509::SimpleCsr::from(csr);
-        println!("{}", serde_json::to_string_pretty(&simple_csr).unwrap());
-        // assert_eq!(subject, "C=EN, ST=none, L=none, O=Wikipedia, OU=none, CN=*.wikipedia.org/emailAddress=none@none.com");
-
-        std::mem::forget(simple_csr);
+        assert_eq!(simple_csr.subject.name, "C=EN, ST=none, L=none, O=Wikipedia, OU=none, CN=*.wikipedia.org/emailAddress=none@none.com");
     }
 }

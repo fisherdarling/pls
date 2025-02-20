@@ -14,13 +14,13 @@ Reading a chain of certificates:
 `pls`:
 
 ```bash
-pls parse ./certs/chain.pem
+pls parse ./test-data/certs/chain.pem
 ```
 
 `openssl`:
 
 ```bash
-openssl storeutl -noout -text -certs ./certs/chain.pem
+openssl storeutl -noout -text -certs ./test-data/certs/chain.pem
 ```
 
 It. Just. Works.
@@ -37,7 +37,7 @@ And because it's 2025, there's json output with the `--json` flag. If you pipe
 `pls`' output into another cli tool, _json output is automatic_.
 
 ```bash
-pls parse ./certs/chain.pem | jq 'map(.subject.name)'
+pls parse ./test-data/certs/chain.pem | jq '.certs|map(.subject.name)'
 [
   "CN=lan.fish",
   "C=US, O=Let's Encrypt, CN=E6",
@@ -52,9 +52,9 @@ Chains are assumed. Yes it's annoying to put a `.[0]|` in front of `jq` filters,
 It's also much more concise:
 
 ```sh
-$ openssl x509 -in ./certs/lan-fish.pem -text -noout | wc -l
+$ openssl x509 -in ./test-data/certs/lan-fish.pem -text -noout | wc -l
       73
-$ pls parse ./certs/lan-fish.pem --text | wc -l
+$ pls parse ./test-data/certs/lan-fish.pem --text | wc -l
       25
 ```
 
@@ -64,9 +64,10 @@ As long as the `----BEGIN` and `----END` "headers" exist somewhere in the file, 
 
 `pls` will parse:
 
-- a stack of PEM (chain).
+- a stack of PEM certificates (a chain).
 - certs spread throughout a yaml file with multiple indentations
 - certs in escaped json
+- other PEM entities in a file. Things like public/private keys and CSRs.
 
 # Installation
 
@@ -116,7 +117,7 @@ pls connect 1.1.1.1 --curves X25519MLKEM768 --no-cert
 
 ![image](./images/connect-curve.png)
 
-## JSON output
+# JSON output
 
 Unless another option is set, e.g. `--pem` or `--text`, `pls` will output json if stdout is [not a TTY](https://doc.rust-lang.org/stable/std/io/trait.IsTerminal.html#tymethod.is_terminal).
 
@@ -124,48 +125,91 @@ There's a ton of fields in the json output and many are redundant. The goal is t
 make writing `jq` filters very easy.
 
 ```json
-[
-  {
-    "subject": {
-      "name": "CN=lan.fish",
+{
+  "certs": [
+    {
+      "subject": {
+        "name": "CN=lan.fish",
+        "ski": "a5bc6f4ea76b6de4f56bcf85ec86921c85b852b7",
+        "sans": {
+          "dns": ["lan.fish", "p2p.lan.fish"]
+        }
+      },
+      "serial": "0347bb00b7415c11d012f7ca5686100f4474",
+      "issuer": {
+        "name": "C=US, O=Let's Encrypt, CN=E6",
+        "aki": "9327469803a951688e98d6c44248db23bf5894d2"
+      },
+      "not_before": "2025-01-03T13:18:47Z",
+      "not_after": "2025-04-03T13:18:46Z",
+      "expires_in": 3737794,
+      "valid_in": -4038204,
+      "valid": null,
+      "verify_result": null,
       "ski": "a5bc6f4ea76b6de4f56bcf85ec86921c85b852b7",
-      "sans": {
-        "dns": ["lan.fish", "p2p.lan.fish"]
-      }
-    },
-    "serial": "0347bb00b7415c11d012f7ca5686100f4474",
-    "issuer": {
-      "name": "C=US, O=Let's Encrypt, CN=E6",
-      "aki": "9327469803a951688e98d6c44248db23bf5894d2"
-    },
-    "not_before": "2025-01-03T13:18:47Z",
-    "not_after": "2025-04-03T13:18:46Z",
-    "expires_in": 6236912,
-    "valid_in": -1539086,
-    "valid": null,
-    "verify_result": null,
-    "ski": "a5bc6f4ea76b6de4f56bcf85ec86921c85b852b7",
-    "aki": "9327469803a951688e98d6c44248db23bf5894d2",
-    "public_key": {
-      "bits": 256,
-      "curve": "id-ecPublicKey",
-      "type": "ec",
-      "group": "prime256v1",
-      "key": "02886615260d6c0d06713f3d9a90f51f2214b799a07bf732335ef793fa05192cad"
-    },
-    "key_usage": {}, // snip: tons of booleans
-    "signature": {
-      "algorithm": "ecdsa-with-SHA384",
-      "value": "</snip>"
-    },
-    "extensions": {},
-    "sha256": "876172fb012989edbc93d2c4c34399f1dff9b5e90f0f30b9c6d2ed82ec184620",
-    "sha1": "e317da2ee772c724754f489c4f06eb8f0fa14f37",
-    "md5": "146f1fa78dee36f9421126e2a7cc589a",
-    "pem": "</snip>"
-  }
-]
+      "aki": "9327469803a951688e98d6c44248db23bf5894d2",
+      "public_key": {
+        "bits": 256,
+        "curve": "id-ecPublicKey",
+        "type": "ec",
+        "group": "prime256v1",
+        "key": "02886615260d6c0d06713f3d9a90f51f2214b799a07bf732335ef793fa05192cad"
+      },
+      "key_usage": {
+        "critical": true,
+        "digital_signature": true,
+        "content_commitment": false,
+        "key_encipherment": false,
+        "data_encipherment": false,
+        "key_agreement": false,
+        "key_cert_sign": false,
+        "crl_sign": false,
+        "encipher_only": false,
+        "decipher_only": false,
+        "extended": {
+          "critical": false,
+          "server_auth": true,
+          "client_auth": true,
+          "code_signing": false,
+          "email_protection": false,
+          "time_stamping": false,
+          "ocsp_signing": false,
+          "custom": []
+        }
+      },
+      "signature": {
+        "algorithm": "ecdsa-with-SHA384",
+        "value": "3066023100ca00eb23cb0df9dc246ccbc5e98cb2d1630cb8f0c0d3f8bf251bc933bd3efcf1eb6dae7516caaa73793fa8b371b78160023100ee555bfcea977132ce2a96cb102d9aaeb6f3a615ffe20d3221f47ae383b9ebc6e7e2e13c144f5267d31dde16b96c66da"
+      },
+      "extensions": {},
+      "sha256": "876172fb012989edbc93d2c4c34399f1dff9b5e90f0f30b9c6d2ed82ec184620",
+      "sha1": "e317da2ee772c724754f489c4f06eb8f0fa14f37",
+      "md5": "146f1fa78dee36f9421126e2a7cc589a",
+      "pem": "</snip>"
+    }
+  ],
+  "csrs": [],
+  "private_keys": []
+}
 ```
+
+# TODO
+
+- [x] Parse and display PEM encoded entities:
+  - [x] x509 Certificates
+  - [x] CSRs
+    - [ ] fingerprint: sha256 digest of DER
+  - [x] Public/Private Keys
+    - [ ] fingerprint: sha256 digest of DER
+- [ ] Parse and display DER encoded entities
+- [x] Automatically output JSON
+- [x] Output PEM on request
+- [ ] Parse every file in a folder
+- [ ] Entity specific commands, rather than only a catch-call `parse`.
+  - [ ] `cert parse`
+  - [ ] `csr parse`
+  - [ ] `pub parse`
+  - [ ] `priv/key parse`
 
 # FAQ
 

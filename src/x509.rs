@@ -5,9 +5,10 @@ use std::{
 
 use boring::{
     bn::BigNumContext,
-    ec::PointConversionForm,
+    ec::{EcGroup, EcKey, PointConversionForm},
     nid::Nid,
-    pkey::{Id, PKey, Public},
+    pkey::{Id, PKey, Private, Public},
+    rsa::Rsa,
     stack::Stack,
     x509::{
         extension::{ExtendedKeyUsage, KeyUsage},
@@ -182,25 +183,27 @@ pub struct Fingerprints {
     pub md5: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Hash, PartialEq, Eq)]
 pub struct SimplePublicKey {
     pub bits: usize,
     #[serde(flatten)]
-    pub curve: SimpleCruve,
+    pub curve: SimpleCurve,
     #[serde(flatten)]
     pub kind: SimplePublicKeyKind,
+    pub pem: String,
 }
 
 impl Default for SimplePublicKey {
     fn default() -> Self {
         SimplePublicKey {
             bits: 0,
-            curve: SimpleCruve::new(Nid::RSA),
+            curve: SimpleCurve::new(Nid::RSA),
             kind: SimplePublicKeyKind::RSA {
                 size: 0,
                 modulus: "".to_string(),
                 exponent: "".to_string(),
             },
+            pem: Default::default(),
         }
     }
 }
@@ -268,13 +271,14 @@ impl From<PKey<Public>> for SimplePublicKey {
 
         SimplePublicKey {
             bits: key.bits() as usize,
-            curve: SimpleCruve::new(key.nid()),
+            curve: SimpleCurve::new(key.nid()),
             kind,
+            pem: String::from_utf8(key.public_key_to_pem().unwrap()).unwrap(),
         }
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Hash, PartialEq, Eq)]
 #[allow(clippy::upper_case_acronyms)]
 #[serde(rename_all = "lowercase", tag = "type")]
 pub enum SimplePublicKeyKind {
@@ -484,31 +488,184 @@ fn parse_asn1_time_print(time: &boring::asn1::Asn1TimeRef) -> Zoned {
         .unwrap()
 }
 
-#[derive(Clone, Serialize)]
-pub struct SimpleCruve {
+#[derive(Clone, Serialize, Hash, PartialEq, Eq)]
+pub struct SimpleCurve {
     #[serde(serialize_with = "serialize_nid")]
     curve: Nid,
 }
 
-impl Default for SimpleCruve {
+impl Default for SimpleCurve {
     fn default() -> Self {
-        SimpleCruve { curve: Nid::UNDEF }
+        SimpleCurve { curve: Nid::UNDEF }
     }
 }
 
-impl std::fmt::Debug for SimpleCruve {
+impl std::fmt::Debug for SimpleCurve {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "{}", self.curve.long_name().unwrap())
     }
 }
 
-impl SimpleCruve {
+impl SimpleCurve {
     pub fn new(nid: Nid) -> Self {
         Self { curve: nid }
     }
 
     pub fn nid(&self) -> Nid {
         self.curve
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SimplePrivateKey {
+    pub bits: usize,
+    pub kind: SimplePrivateKeyKind,
+    pub pem: String,
+    #[serde(skip)]
+    pub _pkey: PKey<Private>,
+}
+
+impl Eq for SimplePrivateKey {}
+
+impl PartialEq for SimplePrivateKey {
+    fn eq(&self, other: &Self) -> bool {
+        self.bits == other.bits && self.kind == other.kind && self.pem == other.pem
+    }
+}
+
+impl std::hash::Hash for SimplePrivateKey {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.bits.hash(state);
+        self.kind.hash(state);
+        self.pem.hash(state);
+    }
+}
+
+impl Default for SimplePrivateKey {
+    fn default() -> Self {
+        let key =
+            EcKey::generate(&EcGroup::from_curve_name(Nid::X9_62_PRIME256V1).unwrap()).unwrap();
+        Self::from(PKey::from_ec_key(key).unwrap())
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Hash, PartialEq, Eq)]
+#[allow(clippy::upper_case_acronyms)]
+#[serde(rename_all = "lowercase", tag = "type")]
+pub enum SimplePrivateKeyKind {
+    RSA {
+        size: usize,
+        modulus: String,
+        exponent: String,
+        p: String,
+        q: String,
+        key: String,
+    },
+    DSA {
+        size: usize,
+        p: String,
+        q: String,
+        g: String,
+        pub_key: String,
+        key: String,
+    },
+    EC {
+        #[serde(serialize_with = "serialize_ec_group")]
+        group: Option<Nid>,
+        pub_key: String,
+        key: String,
+    },
+    Ed25519 {
+        pub_key: String,
+        key: String,
+    },
+    Ed448 {
+        pub_key: String,
+        key: String,
+    },
+}
+
+impl From<PKey<Private>> for SimplePrivateKey {
+    fn from(pkey: PKey<Private>) -> Self {
+        let bits = pkey.bits() as usize;
+
+        let kind = match pkey.id() {
+            Id::RSA => {
+                let rsa = pkey.rsa().unwrap();
+                SimplePrivateKeyKind::RSA {
+                    size: (rsa.size() as usize * 8),
+                    modulus: hex::encode(rsa.n().to_vec()),
+                    exponent: rsa.e().to_dec_str().unwrap().to_string().parse().unwrap(),
+                    key: rsa.d().to_hex_str().unwrap().to_string(),
+                    p: rsa.p().unwrap().to_hex_str().unwrap().to_string(),
+                    q: rsa.q().unwrap().to_hex_str().unwrap().to_string(),
+                }
+            }
+            Id::DSA => {
+                let dsa = pkey.dsa().unwrap();
+                SimplePrivateKeyKind::DSA {
+                    size: (dsa.size() as usize * 8),
+                    p: dsa.p().to_hex_str().unwrap().to_string(),
+                    q: dsa.q().to_hex_str().unwrap().to_string(),
+                    g: dsa.g().to_hex_str().unwrap().to_string(),
+                    pub_key: dsa.pub_key().to_hex_str().unwrap().to_string(),
+                    key: dsa.priv_key().to_hex_str().unwrap().to_string(),
+                }
+            }
+            Id::EC => {
+                let ec = pkey.ec_key().unwrap();
+                let mut bignum = BigNumContext::new().unwrap();
+                SimplePrivateKeyKind::EC {
+                    group: ec.group().curve_name(),
+                    pub_key: hex::encode(
+                        ec.public_key()
+                            .to_bytes(ec.group(), PointConversionForm::COMPRESSED, &mut bignum)
+                            .unwrap(),
+                    ),
+                    key: hex::encode(ec.private_key().to_hex_str().unwrap()),
+                }
+            }
+            Id::ED25519 => {
+                let ec = pkey.ec_key().unwrap();
+                let group = ec.group();
+                let mut bignum = BigNumContext::new().unwrap();
+                SimplePrivateKeyKind::Ed25519 {
+                    pub_key: hex::encode(
+                        ec.public_key()
+                            .to_bytes(group, PointConversionForm::COMPRESSED, &mut bignum)
+                            .unwrap(),
+                    ),
+                    key: ec.private_key().to_hex_str().unwrap().to_string(),
+                }
+            }
+            Id::ED448 => {
+                let ec = pkey.ec_key().unwrap();
+                let group = ec.group();
+                let mut bignum = BigNumContext::new().unwrap();
+                SimplePrivateKeyKind::Ed448 {
+                    pub_key: hex::encode(
+                        ec.public_key()
+                            .to_bytes(group, PointConversionForm::COMPRESSED, &mut bignum)
+                            .unwrap(),
+                    ),
+                    key: ec.private_key().to_hex_str().unwrap().to_string(),
+                }
+            }
+            _ => unimplemented!(),
+        };
+
+        SimplePrivateKey {
+            bits,
+            kind,
+            pem: String::from_utf8(pkey.private_key_to_pem_pkcs8().unwrap()).unwrap(),
+            _pkey: pkey,
+        }
+    }
+}
+
+impl From<Rsa<Private>> for SimplePrivateKey {
+    fn from(rsa: Rsa<Private>) -> Self {
+        SimplePrivateKey::from(PKey::from_rsa(rsa).unwrap())
     }
 }
 
@@ -520,6 +677,17 @@ pub struct SimpleCsr {
     pub pem: String,
     #[serde(skip)]
     pub _csr: X509Req,
+}
+
+impl fmt::Debug for SimpleCsr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SimpleCsr")
+            .field("subject", &self.subject)
+            .field("public_key", &self.public_key)
+            .field("signature", &self.signature)
+            .field("pem", &self.pem)
+            .finish()
+    }
 }
 
 impl Default for SimpleCsr {

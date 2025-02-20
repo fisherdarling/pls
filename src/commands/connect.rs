@@ -48,7 +48,7 @@ pub struct Connect {
 }
 
 impl CommandExt for Connect {
-    async fn run(mut self, format: Format) -> color_eyre::Result<()> {
+    async fn run(self, format: Format) -> color_eyre::Result<()> {
         let dns_start = Instant::now();
         let (hostname, addr) = parse_host(&self.host);
         let time_dns = dns_start.elapsed();
@@ -67,12 +67,9 @@ impl CommandExt for Connect {
             connector_builder.set_verify(SslVerifyMode::NONE);
         }
 
-        if self.pqc {
-            self.curves = Some("X25519MLKEM768:X25519Kyber768Draft00".to_string());
-        }
         if let Some(curve_list) = self.curves {
             connector_builder
-                .set_curves_list(&curve_list)
+                .set_cipher_list(&curve_list)
                 .with_context(|| format!("Setting curve list to: {curve_list:?}"))?;
         }
 

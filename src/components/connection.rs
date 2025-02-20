@@ -74,7 +74,7 @@ pub fn print_tls_connection_with_certs(
                     // only print certs if there are any
                     #((!connection.certs.is_empty()).then(|| element! {
                         View(flex_direction: FlexDirection::Column) {
-                            Text(content: if connection.certs.len() > 1 {"certs:"} else {"cert:"}, color: TOP_LEVEL_COLOR)
+                            Text(content: "certs:", color: TOP_LEVEL_COLOR)
                             View(margin_left: 4) {
                                 MultipleCertView(certs: connection.certs)
                             }

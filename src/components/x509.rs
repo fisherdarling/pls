@@ -6,7 +6,7 @@ use crate::{
     components::round_relative_human,
     theme::{HIGHLIGHT_COLOR, KEY_WIDTH, TOP_LEVEL_COLOR},
     x509::{
-        BasicConstraints, Fingerprints, Issuer, Signature, SimpleCert, SimpleCsr, SimpleKeyUsage,
+        BasicConstraints, Fingerprints, Issuer, Signature, SimpleCert, SimpleKeyUsage,
         SimplePublicKey, SimplePublicKeyKind, Subject, Validity,
     },
 };
@@ -220,7 +220,7 @@ pub fn SurroundText(props: &SurroundTextProps) -> impl Into<AnyElement<'static>>
 
 #[derive(Default, Props)]
 pub struct PublicKeyProps {
-    public_key: SimplePublicKey,
+    pub(crate) public_key: SimplePublicKey,
 }
 
 #[component]
@@ -447,77 +447,15 @@ pub struct MultipleCertViewProps {
 #[component]
 pub fn MultipleCertView(props: &MultipleCertViewProps) -> impl Into<AnyElement<'static>> {
     element! {
-        View(flex_direction: FlexDirection::Column, gap: 1) {
+        View(gap: 1, flex_direction: FlexDirection::Column) {
             #(props.certs.iter().cloned().enumerate().map(|(i, cert)| element!(
                 View(flex_direction: FlexDirection::Column) {
-                    #((props.certs.len() > 1).then(|| element! {
-                        Text(content: format!("cert #{}:", i + 1), color: Color::Magenta)
-                    }))
+                    Text(content: format!("cert #{}:", i + 1), color: Color::Magenta)
                     X509View(cert)
                 }
             )))
         }
     }
-}
-#[derive(Default, Props)]
-pub struct CsrProps {
-    csr: SimpleCsr,
-}
-
-#[component]
-pub fn CsrView(props: &CsrProps) -> impl Into<AnyElement<'static>> {
-    element! {
-        View(flex_direction: FlexDirection::Column) {
-            SubjectView(subject: props.csr.subject.clone(), serial: None)
-            PublicKeyView(public_key: props.csr.public_key.clone())
-            SignatureView(signature: props.csr.signature.clone(), top_level: true)
-        }
-    }
-}
-
-#[derive(Default, Props)]
-pub struct MultipleCsrViewProps {
-    pub csrs: Vec<SimpleCsr>,
-}
-
-#[component]
-pub fn MultipleCsrView(props: &MultipleCsrViewProps) -> impl Into<AnyElement<'static>> {
-    element! {
-        View(flex_direction: FlexDirection::Column, gap: 1) {
-            #(props.csrs.iter().cloned().enumerate().map(|(i, csr)| element!(
-                View(flex_direction: FlexDirection::Column) {
-                    #((props.csrs.len() > 1).then(|| element! {
-                        Text(content: format!("csr #{}:", i + 1), color: Color::Magenta)
-                    }))
-                    CsrView(csr)
-                }
-            )))
-        }
-    }
-}
-
-pub fn print_csrs(csrs: Vec<SimpleCsr>, format: Format) -> color_eyre::Result<()> {
-    tracing::info!("printing {} csrs in {format:?} format", csrs.len());
-    match format {
-        Format::Text => {
-            element! {
-                View(margin: 1) {
-                    MultipleCsrView(csrs)
-                }
-            }
-            .print();
-        }
-        Format::Json => {
-            println!("{}", serde_json::to_string_pretty(&csrs)?);
-        }
-        Format::Pem => {
-            for csr in csrs {
-                print!("{}", csr.pem);
-            }
-        }
-    }
-
-    Ok(())
 }
 
 pub fn print_certs(certs: Vec<SimpleCert>, format: Format) -> color_eyre::Result<()> {
