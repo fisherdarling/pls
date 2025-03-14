@@ -1,3 +1,5 @@
+#[cfg(feature = "lsp")]
+use crate::commands::lsp::Lsp;
 use crate::{
     commands::{connect::Connect, parse::Parse, Format},
     CommandExt,
@@ -57,6 +59,8 @@ impl Cli {
 pub enum Command {
     Parse(Parse),
     Connect(Connect),
+    #[cfg(feature = "lsp")]
+    Lsp(Lsp),
     #[default]
     #[clap(skip)]
     NoCommand,
@@ -67,6 +71,8 @@ impl Command {
         match self {
             Command::Parse(cert) => cert.run(format).await,
             Command::Connect(connect) => connect.run(format).await,
+            #[cfg(feature = "lsp")]
+            Command::Lsp(lsp) => lsp.run(format).await,
             Command::NoCommand => {
                 let mut clap_command = <Cli as clap::CommandFactory>::command();
                 clap_command.print_long_help()?;

@@ -1,6 +1,8 @@
 use std::io::IsTerminal as _;
 
 pub mod connect;
+#[cfg(feature = "lsp")]
+pub mod lsp;
 pub mod parse;
 
 #[allow(async_fn_in_trait)]
