@@ -3,19 +3,8 @@ use tower_lsp_server::jsonrpc::Result;
 use tower_lsp_server::lsp_types::*;
 use tower_lsp_server::{Client, LanguageServer, LspService, Server};
 
-// #[tokio::main]
-// async fn main() {
-//     let stdin = tokio::io::stdin();
-//     let stdout = tokio::io::stdout();
-
-//     let (service, socket) = LspService::new(|client| Backend { client });
-//     Server::new(stdin, stdout, socket).serve(service).await;
-// }
-
 use super::{CommandExt, Format};
 
-/// Connect to the given host and print information about the TLS connection.
-/// Supports both TCP/TLS and QUIC.
 #[derive(Default, Clone, Debug, Parser)]
 pub struct Lsp {}
 
