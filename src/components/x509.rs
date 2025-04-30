@@ -71,6 +71,17 @@ pub fn SubjectView(props: &SubjectProps) -> impl Into<AnyElement<'static>> {
         }
     });
 
+    let uri = (!props.subject.sans.uri.is_empty()).then(|| {
+        element! {
+            View(gap: 1) {
+                Text(content: "uri:", color: Color::Green) {}
+                #(props.subject.sans.uri.iter().map(|uri| {
+                    element! { Text(content: uri, decoration: TextDecoration::Underline) }
+                }))
+            }
+        }
+    });
+
     element! {
         View(flex_direction: FlexDirection::Column) {
             View(gap: 1) {
@@ -81,6 +92,7 @@ pub fn SubjectView(props: &SubjectProps) -> impl Into<AnyElement<'static>> {
                 #(dns)
                 #(ip)
                 #(email)
+                #(uri)
             }
             #(props.subject.ski.clone().map(|ski| {
                 element! {
