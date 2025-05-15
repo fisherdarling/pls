@@ -1,0 +1,278 @@
+use std::{
+    cell::LazyCell,
+    ops::{Deref, Range},
+    sync::Arc,
+};
+
+use anyhow::Context;
+use bytes::Bytes;
+use regex::bytes::{Regex, RegexBuilder};
+
+use crate::Spanned;
+
+thread_local! {
+  static PEM_REGEX: Regex = RegexBuilder::new(r"(?P<pem>-----BEGIN (?P<header_label>.*?)-----(?:\n|\\n)?(?P<cert_data>.*?)(?:\n|\\n)?-----END .*?-----)")
+  .dot_matches_new_line(true)
+  .build().unwrap();
+  static NEWLINE_REGEX: Regex = Regex::new(r"(\r|\\r)?(\n|\\n)").unwrap();
+}
+
+pub fn pems<'a>(data: &'a [u8]) -> impl Iterator<Item = Spanned<RawPem<'a>>> {
+    PEM_REGEX.with(|re| {
+        let captures = get_captures(re, data);
+        let newlines = LazyCell::new(|| newlines(data));
+
+        captures
+            .into_iter()
+            .map(move |(pem, header_label, cert_data)| {
+                let (pem_line, pem_col) = determine_line_and_column(&newlines, pem.start());
+                let (header_label_line, header_label_col) =
+                    determine_line_and_column(&newlines, header_label.start());
+                let (cert_data_line, cert_data_col) =
+                    determine_line_and_column(&newlines, cert_data.start());
+
+                let label = Spanned {
+                    span: header_label.range(),
+                    line: header_label_line,
+                    col: header_label_col,
+                    data: header_label.as_bytes(),
+                };
+
+                let cert_data = Spanned {
+                    span: cert_data.range(),
+                    line: cert_data_line,
+                    col: cert_data_col,
+                    data: cert_data.as_bytes(),
+                };
+
+                Spanned {
+                    span: pem.range(),
+                    line: pem_line,
+                    col: pem_col,
+                    data: RawPem {
+                        label,
+                        cert_data,
+                        raw_pem: Spanned {
+                            span: pem.range(),
+                            line: pem_line,
+                            col: pem_col,
+                            data: pem.as_bytes(),
+                        },
+                    },
+                }
+            })
+    })
+}
+
+fn get_captures<'a>(
+    re: &Regex,
+    data: &'a [u8],
+) -> Vec<(
+    regex::bytes::Match<'a>,
+    regex::bytes::Match<'a>,
+    regex::bytes::Match<'a>,
+)> {
+    re.captures_iter(data)
+        .map(move |capture| {
+            (
+                capture.get(1).unwrap(),
+                capture.get(2).unwrap(),
+                capture.get(3).unwrap(),
+            )
+        })
+        .collect()
+}
+
+fn determine_line_and_column(newlines: &[Range<usize>], index: usize) -> (usize, usize) {
+    // +1 because humans 1-index lines
+    match newlines.binary_search_by(|range| range.end.cmp(&index)) {
+        // we're on a boundry
+        Ok(idx) => (idx + 1 + 1, 0), // +1 for the next line, +1 for 1-indexing
+        // we're before the first newline
+        Err(0) => (1, index),
+        // we're in the middle of a line
+        Err(idx) => (idx + 1, index - newlines[idx - 1].end),
+    }
+}
+
+fn newlines<'a>(data: &'a [u8]) -> Vec<Range<usize>> {
+    NEWLINE_REGEX.with(|re| re.find_iter(data).map(|c| c.range()).collect())
+}
+
+#[derive(Debug)]
+pub struct RawPem<'a> {
+    label: Spanned<&'a [u8]>,
+    cert_data: Spanned<&'a [u8]>,
+    raw_pem: Spanned<&'a [u8]>,
+}
+
+impl RawPem<'_> {
+    pub fn label(&self) -> &Spanned<&[u8]> {
+        &self.label
+    }
+
+    pub fn raw_pem(&self) -> &[u8] {
+        &self.raw_pem
+    }
+
+    pub fn cert_data(&self) -> &Spanned<&[u8]> {
+        &self.cert_data
+    }
+
+    pub fn decode(&self) -> anyhow::Result<DecodedRawPem> {
+        let label = std::str::from_utf8(self.label.data).context("utf8 decoding cert label")?;
+
+        let raw_cert_data = NEWLINE_REGEX.with(|re| re.replace_all(self.cert_data.data, b""));
+        let utf8_cert_data =
+            std::str::from_utf8(&raw_cert_data).context("utf8 decoding cert data")?;
+        let decoded_cert_data =
+            boring::base64::decode_block(utf8_cert_data).context("base64 decoding cert data")?;
+        let cert_data = Bytes::from(decoded_cert_data);
+
+        Ok(DecodedRawPem {
+            label: Spanned {
+                span: self.label.span.clone(),
+                line: self.label.line,
+                col: self.label.col,
+                data: Arc::from(label),
+            },
+            decoded_cert_data: Spanned {
+                span: self.cert_data.span.clone(),
+                line: self.cert_data.line,
+                col: self.cert_data.col,
+                data: cert_data,
+            },
+        })
+    }
+}
+
+pub struct DecodedRawPem {
+    label: Spanned<Arc<str>>,
+    decoded_cert_data: Spanned<Bytes>,
+}
+
+impl DecodedRawPem {
+    pub fn label(&self) -> &Spanned<Arc<str>> {
+        &self.label
+    }
+
+    pub fn der(&self) -> &Spanned<Bytes> {
+        &self.decoded_cert_data
+    }
+}
+
+impl<T> Spanned<T> {
+    pub fn span(&self) -> Range<usize> {
+        self.span.clone()
+    }
+
+    pub fn line(&self) -> usize {
+        self.line
+    }
+
+    pub fn col(&self) -> usize {
+        self.col
+    }
+}
+
+impl<T> Deref for Spanned<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{determine_line_and_column, newlines};
+    use crate::lexer::pems;
+
+    #[test]
+    fn test_newlines() {
+        let data = b"Hello\nWorld\r\n";
+        let newlines = newlines(data);
+
+        assert_eq!(&data[newlines[0].clone()], b"\n");
+        assert_eq!(&data[newlines[1].clone()], b"\r\n");
+    }
+
+    #[test]
+    fn test_determine_column_simple() {
+        let data = b"\nA";
+        let newlines = newlines(data);
+        assert_eq!(determine_line_and_column(&newlines, 1), (1, 0));
+    }
+
+    #[test]
+    fn test_determine_column_complex() {
+        let data = b"Hello\nWorld\r\n";
+        let newlines = newlines(data);
+        assert_eq!(determine_line_and_column(&newlines, 0), (1, 0));
+        assert_eq!(determine_line_and_column(&newlines, 1), (1, 1));
+        assert_eq!(determine_line_and_column(&newlines, 2), (1, 2));
+        assert_eq!(determine_line_and_column(&newlines, 3), (1, 3));
+        assert_eq!(determine_line_and_column(&newlines, 4), (1, 4));
+        assert_eq!(determine_line_and_column(&newlines, 5), (1, 5));
+        assert_eq!(determine_line_and_column(&newlines, 6), (2, 0));
+        assert_eq!(determine_line_and_column(&newlines, 7), (2, 1));
+        assert_eq!(determine_line_and_column(&newlines, 8), (2, 2));
+        assert_eq!(determine_line_and_column(&newlines, 9), (2, 3));
+        assert_eq!(determine_line_and_column(&newlines, 10), (2, 4));
+        assert_eq!(determine_line_and_column(&newlines, 11), (2, 5));
+    }
+
+    #[test]
+    fn test_pems() {
+        let data =
+            b"    \n    -----BEGIN CERTIFICATE-----\nHello, World!\nAnd goodbye!\n-----END CERTIFICATE-----";
+
+        let pem = pems(data).next().unwrap();
+        assert_eq!(pem.span(), 9..89);
+        assert_eq!(pem.line(), 2);
+        assert_eq!(pem.col(), 4);
+
+        let label = pem.label();
+        assert_eq!(label.span(), 20..31);
+        assert_eq!(label.line(), 2);
+        assert_eq!(label.col(), 15);
+
+        let data = pem.cert_data();
+        assert_eq!(data.span(), 37..63);
+        assert_eq!(data.line(), 3);
+        assert_eq!(data.col(), 0);
+    }
+
+    #[test]
+    fn test_json_pem() {
+        let data =
+            br#""\"-----BEGIN CERTIFICATE-----\\nHello, World!\\nAnd goodbye!\\n-----END CERTIFICATE-----\"""#;
+
+        let pem = pems(data).next().unwrap();
+        assert_eq!(pem.span(), 3..89);
+        assert_eq!(pem.line(), 1);
+        assert_eq!(pem.col(), 3);
+        assert_eq!(pem.raw_pem(), br"-----BEGIN CERTIFICATE-----\\nHello, World!\\nAnd goodbye!\\n-----END CERTIFICATE-----");
+
+        let label = pem.label();
+        assert_eq!(label.span(), 14..25);
+        assert_eq!(label.line(), 1);
+        assert_eq!(label.col(), 14);
+        assert_eq!(label.data, b"CERTIFICATE");
+
+        let data = pem.cert_data();
+        assert_eq!(data.span(), 30..62);
+        assert_eq!(data.line(), 1);
+        assert_eq!(data.col(), 30);
+        assert_eq!(data.data, br"\\nHello, World!\\nAnd goodbye!\");
+    }
+
+    #[test]
+    fn test_decode_pem() {
+        let data = include_bytes!("../../test-data/certs/cloudflare.com.pem");
+        let pem = pems(data).next().unwrap();
+        let decoded = pem.decode().unwrap();
+        assert_eq!(&*decoded.label.data, "CERTIFICATE");
+        assert_eq!(decoded.decoded_cert_data.data.len(), 1017);
+    }
+}

@@ -1,0 +1,15 @@
+[package]
+name = "pls-types"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = { workspace = true }
+boring = { workspace = true }
+serde = { workspace = true, features = ["derive", "rc"] }
+jiff = { workspace = true }
+bytes = { workspace = true, features = ["serde"] }
+regex = { workspace = true }
+
+[dev-dependencies]
+insta = { workspace = true, features = ["json"] }

@@ -1,14 +1,14 @@
-[package]
-name = "pls-cli"
-version = "0.0.1"
-edition = "2021"
+[workspace]
+members = ["pls-parser", "pls-types"]
+resolver = "3"
 
-[[bin]]
-name = "pls"
-path = "src/bin/main.rs"
-
-[dependencies]
-anyhow = "1.0.95"
+[workspace.dependencies]
+anyhow = "1"
+base64 = "0.22"
+bytes = "1.10"
+insta = "1.43"
+regex = { version = "1" }
+jiff = { version = "0.2.13", features = ["serde"] }
 boring = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717", features = [
     "rpk",
     "pq-experimental",
@@ -19,41 +19,67 @@ boring-sys = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2
     "rpk",
     "pq-experimental",
 ] }
-clap = { version = "4.5.23", features = ["derive"] }
-clap-verbosity-flag = { version = "3.0.2", features = ["tracing"] }
-color-eyre = "0.6.3"
-hex = "0.4.3"
-iocraft = "0.6.4"
-jiff = { version = "0.1.21", features = ["serde"] }
-memchr = "2.7.4"
-regex = "1.11.1"
-serde = { version = "1.0.217", features = ["derive"] }
-serde_json = "1.0.135"
-tokio = { version = "1", default-features = false, features = [
-    "rt",
-    "macros",
-    "net",
-    "time",
-    "rt-multi-thread",
-] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 tokio-boring = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717" }
-tracing = "0.1.41"
-tracing-subscriber = "0.3.19"
-url = "2.5.4"
 
-# [patch.crates-io]
-# boring = { path = "../../Opensource/boring/boring", features = [
+
+# [package]
+# name = "pls-cli"
+# version = "0.0.1"
+# edition = "2021"
+
+# [[bin]]
+# name = "pls"
+# path = "src/bin/main.rs"
+
+# [dependencies]
+# anyhow = "1.0.95"
+# boring = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717", features = [
 #     "rpk",
 #     "pq-experimental",
 #     "kx-safe-default",
 #     "kx-client-pq-supported",
 # ] }
-# boring-sys = { path = "../../Opensource/boring/boring-sys", features = [
+# boring-sys = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717", features = [
 #     "rpk",
 #     "pq-experimental",
-#     "kx-safe-default",
-#     "kx-client-pq-supported",
 # ] }
+# clap = { version = "4.5.23", features = ["derive"] }
+# clap-verbosity-flag = { version = "3.0.2", features = ["tracing"] }
+# color-eyre = "0.6.3"
+# hex = "0.4.3"
+# iocraft = "0.6.4"
+# jiff = { version = "0.1.21", features = ["serde"] }
+# memchr = "2.7.4"
+# regex = "1.11.1"
+# serde = { version = "1.0.217", features = ["derive"] }
+# serde_json = "1.0.135"
+# tokio = { version = "1", default-features = false, features = [
+#     "rt",
+#     "macros",
+#     "net",
+#     "time",
+#     "rt-multi-thread",
+# ] }
+# tokio-boring = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717" }
+# tracing = "0.1.41"
+# tracing-subscriber = "0.3.19"
+# url = "2.5.4"
 
-[profile.release]
-debug = true
+# # [patch.crates-io]
+# # boring = { path = "../../Opensource/boring/boring", features = [
+# #     "rpk",
+# #     "pq-experimental",
+# #     "kx-safe-default",
+# #     "kx-client-pq-supported",
+# # ] }
+# # boring-sys = { path = "../../Opensource/boring/boring-sys", features = [
+# #     "rpk",
+# #     "pq-experimental",
+# #     "kx-safe-default",
+# #     "kx-client-pq-supported",
+# # ] }
+
+# [profile.release]
+# debug = true
