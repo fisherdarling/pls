@@ -9,17 +9,13 @@ fn main() {
     for pem in parser.parse() {
         match pem {
             pls_parser::ParsedItem::SpannedParsedPem(spanned_parsed_pem) => {
-                let cert = pls_types::cert::Cert::from_der(spanned_parsed_pem.der()).unwrap();
-                println!(
-                    "{:?}: {:?}, line={}, col={}\n{:#?}",
-                    cert.subject.common_name,
-                    cert.ski,
-                    spanned_parsed_pem.line(),
-                    spanned_parsed_pem.col(),
-                    cert
-                );
+                println!("{}", spanned_parsed_pem.label());
+                println!("{:?}", spanned_parsed_pem.value());
             }
-            pls_parser::ParsedItem::DecodeFailedPem(spanned, error) => todo!(),
+            pls_parser::ParsedItem::DecodeFailedPem(spanned, error) => {
+                println!("{:?}", String::from_utf8_lossy(&*spanned.label()));
+                println!("{}", error);
+            }
         }
     }
 }

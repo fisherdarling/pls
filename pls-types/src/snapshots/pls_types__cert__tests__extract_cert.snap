@@ -1,6 +1,5 @@
 ---
 source: pls-types/src/cert.rs
-assertion_line: 68
 expression: cert
 ---
 Cert {

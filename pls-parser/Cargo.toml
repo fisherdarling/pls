@@ -13,4 +13,5 @@ base64 = { workspace = true }
 boring = { workspace = true }
 bytes = { workspace = true }
 regex = { version = "1", default-features = false, features = ["std", "perf"] }
+escape8259 = { workspace = true }
 pls-types = { path = "../pls-types" }

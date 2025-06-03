@@ -1,14 +1,11 @@
 [workspace]
-members = ["pls-parser", "pls-types"]
+members = ["pls-parser", "pls-scanner", "pls-settings", "pls-types"]
 resolver = "3"
 
 [workspace.dependencies]
 anyhow = "1"
 base64 = "0.22"
-bytes = "1.10"
-insta = "1.43"
-regex = { version = "1" }
-jiff = { version = "0.2.13", features = ["serde"] }
+bon = "3"
 boring = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717", features = [
     "rpk",
     "pq-experimental",
@@ -19,10 +16,26 @@ boring-sys = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2
     "rpk",
     "pq-experimental",
 ] }
+indicatif = "0.17"
+tokio-boring = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717" }
+bytes = "1.10"
+clap = { version = "4.5.37", features = ["derive"] }
+foundations = { version = "4.5", default-features = false }
+gxhash = "3.5.0"
+globset = "0.4.0"
+escape8259 = "0.5.3"
+ignore = { version = "0.4.23", features = ["simd-accel"] }
+insta = "1.43"
+memmap2 = "0.9.5"
+jiff = { version = "0.2.13", features = ["serde"] }
+regex = { version = "1" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tokio-boring = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717" }
 
+[patch."https://github.com/fisherdarling/boring"]
+boring = { path = "../../Opensource/boring/boring" }
+boring-sys = { path = "../../Opensource/boring/boring-sys" }
+# tokio-boring = { path = "../../Opensource/boring/tokio-boring" }
 
 # [package]
 # name = "pls-cli"

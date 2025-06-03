@@ -32,28 +32,28 @@ pub struct Cert {
 impl Cert {
     pub fn from_der(der: &[u8]) -> anyhow::Result<Self> {
         let cert = X509::from_der(der).context("decoding DER with BoringSSL")?;
-        Ok(Self::from_boring(&cert))
+        Self::from_boring(&cert)
     }
 
     pub fn from_pem(pem: &[u8]) -> anyhow::Result<Self> {
         let cert = X509::from_pem(pem).context("decoding PEM with BoringSSL")?;
-        Ok(Self::from_boring(&cert))
+        Self::from_boring(&cert)
     }
 
-    pub fn from_boring(cert: &X509) -> Self {
-        Self {
+    pub fn from_boring(cert: &X509) -> anyhow::Result<Self> {
+        Ok(Self {
             subject: Subject::from_cert(cert),
-            expiry: Expiry::from_cert(cert),
+            expiry: Expiry::from_cert(cert).context("parsing expiry")?,
             sans: Sans::from_cert(cert),
             issuer: Issuer::from_cert(cert),
-            public_key: CertPublicKey::from_cert(cert),
+            public_key: CertPublicKey::from_cert(cert).context("parsing public key")?,
             serial: SerialNumber::from_cert(cert),
             ski: Ski::from_cert(cert),
             aki: Aki::from_cert(cert),
             signature: Signature::from_cert(cert),
             fingerprints: Digests::from_cert(cert),
             der: Hex::from(cert.to_der().unwrap()),
-        }
+        })
     }
 }
 

@@ -1,0 +1,16 @@
+---
+source: pls-types/src/sans.rs
+expression: sans
+---
+Sans {
+    dns: [
+        "cloudflare.com",
+        "*.amp.cloudflare.com",
+        "*.cloudflare.com",
+        "*.dns.cloudflare.com",
+        "*.staging.cloudflare.com",
+    ],
+    ip: [],
+    email: [],
+    uri: [],
+}

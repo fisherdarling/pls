@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     cell::LazyCell,
     ops::{Deref, Range},
     sync::Arc,
@@ -14,7 +15,9 @@ thread_local! {
   static PEM_REGEX: Regex = RegexBuilder::new(r"(?P<pem>-----BEGIN (?P<header_label>.*?)-----(?:\n|\\n)?(?P<cert_data>.*?)(?:\n|\\n)?-----END .*?-----)")
   .dot_matches_new_line(true)
   .build().unwrap();
-  static NEWLINE_REGEX: Regex = Regex::new(r"(\r|\\r)?(\n|\\n)").unwrap();
+  static NEWLINE_REGEX: Regex = Regex::new(r"\n").unwrap();
+  static WHITESPACE_REGEX: Regex = Regex::new(r"\s").unwrap();
+  static NOT_B64: regex::Regex = regex::Regex::new(r"[^A-Za-z0-9+/=]").unwrap();
 }
 
 pub fn pems<'a>(data: &'a [u8]) -> impl Iterator<Item = Spanned<RawPem<'a>>> {
@@ -122,11 +125,17 @@ impl RawPem<'_> {
     pub fn decode(&self) -> anyhow::Result<DecodedRawPem> {
         let label = std::str::from_utf8(self.label.data).context("utf8 decoding cert label")?;
 
-        let raw_cert_data = NEWLINE_REGEX.with(|re| re.replace_all(self.cert_data.data, b""));
-        let utf8_cert_data =
-            std::str::from_utf8(&raw_cert_data).context("utf8 decoding cert data")?;
-        let decoded_cert_data =
-            boring::base64::decode_block(utf8_cert_data).context("base64 decoding cert data")?;
+        let str_cert_data =
+            std::str::from_utf8(self.cert_data.data).context("utf8 decoding cert data")?;
+        let unescaped_cert_data = escape8259::unescape(str_cert_data)
+            .context("unescaping cert data")
+            .map(Cow::Owned)
+            .unwrap_or(Cow::Borrowed(str_cert_data));
+
+        let cleaned_b64_cert_data = NOT_B64.with(|re| re.replace_all(&unescaped_cert_data, ""));
+        let decoded_cert_data = boring::base64::decode_block(&cleaned_b64_cert_data)
+            .context("base64 decoding cert data")?;
+
         let cert_data = Bytes::from(decoded_cert_data);
 
         Ok(DecodedRawPem {
@@ -146,6 +155,7 @@ impl RawPem<'_> {
     }
 }
 
+#[derive(Debug)]
 pub struct DecodedRawPem {
     label: Spanned<Arc<str>>,
     decoded_cert_data: Spanned<Bytes>,

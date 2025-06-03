@@ -1,0 +1,20 @@
+[package]
+name = "pls-scanner"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = { workspace = true }
+bon = { workspace = true }
+clap = { version = "4.5.37", features = ["derive"] }
+gxhash = "3.5.0"
+ignore = { version = "0.4.23", features = ["simd-accel"] }
+memmap2 = "0.9.5"
+globset = { workspace = true }
+kanal = "0.1.1"
+fastrand = "2.3"
+rayon = "1.10"
+pls-parser = { path = "../pls-parser" }
+pls-types = { path = "../pls-types" }
+pls-settings = { path = "../pls-settings" }
+indicatif = { workspace = true }

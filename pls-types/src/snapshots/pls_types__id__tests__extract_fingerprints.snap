@@ -1,7 +1,6 @@
 ---
 source: pls-types/src/id.rs
-assertion_line: 129
-expression: digests
+expression: fingerprints
 ---
 Digests {
     md5: b756f75c428239bd60990a4728eb3bfb,
