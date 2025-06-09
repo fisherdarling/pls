@@ -14,6 +14,7 @@ use crate::{nid::Nid, util::Hex};
 #[derive(Debug, Clone, Serialize)]
 pub struct CertPublicKey {
     pub usage: KeyUsage,
+    pub extended_usage: ExtendedKeyUsage,
     #[serde(flatten)]
     pub key: PublicKey,
     pub spki: Hex,
@@ -23,8 +24,14 @@ impl CertPublicKey {
     pub fn from_cert(cert: &X509) -> anyhow::Result<Self> {
         let key = PublicKey::from_cert(cert)?;
         let usage = KeyUsage::from_cert(cert);
+        let extended_usage = ExtendedKeyUsage::from_cert(cert);
         let spki = Hex::from(cert.public_key().unwrap().public_key_to_der().unwrap());
-        Ok(Self { key, usage, spki })
+        Ok(Self {
+            key,
+            usage,
+            extended_usage,
+            spki,
+        })
     }
 }
 
@@ -220,6 +227,35 @@ impl KeyUsage {
     }
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct ExtendedKeyUsage {
+    pub critical: bool,
+    pub server_auth: bool,
+    pub client_auth: bool,
+    pub code_signing: bool,
+    pub email_protection: bool,
+    pub time_stamping: bool,
+    pub ocsp_signing: bool,
+}
+
+impl ExtendedKeyUsage {
+    pub fn from_cert(cert: &X509) -> Self {
+        Self::from_boring(&cert.extended_key_usage())
+    }
+
+    pub fn from_boring(key_usage: &boring::x509::extension::ExtendedKeyUsage) -> Self {
+        Self {
+            critical: key_usage.critical,
+            server_auth: key_usage.server_auth,
+            client_auth: key_usage.client_auth,
+            code_signing: key_usage.code_signing,
+            email_protection: key_usage.email_protection,
+            time_stamping: key_usage.time_stamping,
+            ocsp_signing: key_usage.ocsp_signing,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct RsaPrivateKey {
     pub n: Hex,
@@ -256,6 +292,14 @@ mod tests {
         let cert = X509::from_pem(cert).unwrap();
         let key_usage = KeyUsage::from_cert(&cert);
         insta::assert_debug_snapshot!(key_usage);
+    }
+
+    #[test]
+    fn extract_extended_key_usage() {
+        let cert = include_bytes!("../../test-data/certs/cloudflare.com.pem");
+        let cert = X509::from_pem(cert).unwrap();
+        let extended_key_usage = ExtendedKeyUsage::from_cert(&cert);
+        insta::assert_debug_snapshot!(extended_key_usage);
     }
 
     #[test]

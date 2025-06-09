@@ -4,8 +4,8 @@ use foundations::settings::settings;
 
 #[settings]
 pub struct Settings {
-    scanning: ScanSettings,
-    reporting: ReportingSettings,
+    pub scanning: ScanSettings,
+    pub reporting: ReportingSettings,
 }
 
 #[settings]
@@ -63,8 +63,16 @@ fn default_file_types() -> Vec<String> {
 
 fn default_ignore_paths() -> Vec<String> {
     vec![
-        "**/node_modules/**".to_string(),
-        "**/pnpm/metadata**".to_string(),
+        "**/node_modules".to_string(),
+        "**/pnpm/metadata".to_string(),
+        #[cfg(target_os = "macos")]
+        "**/Library/Caches".to_string(),
+        #[cfg(target_os = "macos")]
+        "**/Library/Developer/CoreSimulator".to_string(),
+        #[cfg(target_os = "macos")]
+        "**/Library/Containers".to_string(),
+        #[cfg(target_os = "macos")]
+        "**/Applications/Xcode.app".to_string(),
     ]
 }
 

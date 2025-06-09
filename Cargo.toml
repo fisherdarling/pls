@@ -6,18 +6,18 @@ resolver = "3"
 anyhow = "1"
 base64 = "0.22"
 bon = "3"
-boring = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717", features = [
+boring = { git = "https://github.com/fisherdarling/boring", rev = "3689ea8e658ba07f9af510423ef2a87669071913", features = [
     "rpk",
     "pq-experimental",
     "kx-safe-default",
     "kx-client-pq-supported",
 ] }
-boring-sys = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717", features = [
+boring-sys = { git = "https://github.com/fisherdarling/boring", rev = "3689ea8e658ba07f9af510423ef2a87669071913", features = [
     "rpk",
     "pq-experimental",
 ] }
 indicatif = "0.17"
-tokio-boring = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717" }
+tokio-boring = { git = "https://github.com/fisherdarling/boring", rev = "3689ea8e658ba07f9af510423ef2a87669071913" }
 bytes = "1.10"
 clap = { version = "4.5.37", features = ["derive"] }
 foundations = { version = "4.5", default-features = false }
@@ -48,13 +48,13 @@ boring-sys = { path = "../../Opensource/boring/boring-sys" }
 
 # [dependencies]
 # anyhow = "1.0.95"
-# boring = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717", features = [
+# boring = { git = "https://github.com/fisherdarling/boring", rev = "9d3e6b2212b65a4074c31e784d21b621ecb0cff8", features = [
 #     "rpk",
 #     "pq-experimental",
 #     "kx-safe-default",
 #     "kx-client-pq-supported",
 # ] }
-# boring-sys = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717", features = [
+# boring-sys = { git = "https://github.com/fisherdarling/boring", rev = "9d3e6b2212b65a4074c31e784d21b621ecb0cff8", features = [
 #     "rpk",
 #     "pq-experimental",
 # ] }
@@ -75,24 +75,24 @@ boring-sys = { path = "../../Opensource/boring/boring-sys" }
 #     "time",
 #     "rt-multi-thread",
 # ] }
-# tokio-boring = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717" }
+# tokio-boring = { git = "https://github.com/fisherdarling/boring", rev = "9d3e6b2212b65a4074c31e784d21b621ecb0cff8" }
 # tracing = "0.1.41"
 # tracing-subscriber = "0.3.19"
 # url = "2.5.4"
 
-# # [patch.crates-io]
-# # boring = { path = "../../Opensource/boring/boring", features = [
-# #     "rpk",
-# #     "pq-experimental",
-# #     "kx-safe-default",
-# #     "kx-client-pq-supported",
-# # ] }
-# # boring-sys = { path = "../../Opensource/boring/boring-sys", features = [
-# #     "rpk",
-# #     "pq-experimental",
-# #     "kx-safe-default",
-# #     "kx-client-pq-supported",
-# # ] }
+[patch.crates-io]
+boring = { path = "../../Opensource/boring/boring", features = [
+    "rpk",
+    "pq-experimental",
+    "kx-safe-default",
+    "kx-client-pq-supported",
+] }
+boring-sys = { path = "../../Opensource/boring/boring-sys", features = [
+    "rpk",
+    "pq-experimental",
+    "kx-safe-default",
+    "kx-client-pq-supported",
+] }
 
-# [profile.release]
-# debug = true
+[profile.release]
+debug = true

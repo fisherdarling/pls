@@ -33,7 +33,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs::File,
-    iter::Scan,
     path::{Path, PathBuf},
     sync::Arc,
     time::{Duration, Instant},
@@ -46,13 +45,15 @@ use indicatif::ProgressStyle;
 use memmap2::Mmap;
 use pls_parser::{ParsedItem, Spanned};
 use pls_settings::ScanSettings;
-use pls_types::cert::Cert;
+use pls_types::cert::{self, Cert, CertDepth};
 
 #[derive(Clone, Builder)]
 pub struct ScanConfig {
     pub roots: Vec<PathBuf>,
     pub file_types: GlobSet,
     pub ignore_globs: GlobSet,
+    pub gitignore: bool,
+    pub track_cas: bool,
 }
 
 impl std::fmt::Debug for ScanConfig {
@@ -61,19 +62,27 @@ impl std::fmt::Debug for ScanConfig {
             roots,
             file_types: _,
             ignore_globs: _,
+            gitignore,
+            track_cas,
         } = self;
 
-        f.debug_struct("ScanConfig").field("roots", &roots).finish()
+        f.debug_struct("ScanConfig")
+            .field("roots", &roots)
+            .field("gitignore", &gitignore)
+            .field("track_cas", &track_cas)
+            .finish()
     }
 }
 
 impl Default for ScanConfig {
     fn default() -> Self {
-        ScanSettings::default().into()
+        pls_settings::Settings::default().into()
     }
 }
 
 pub fn scan(config: ScanConfig) -> () {
+    let start = Instant::now();
+
     let mut roots = config.roots.iter();
 
     let mut builder = WalkBuilder::new(roots.next().unwrap());
@@ -81,7 +90,9 @@ pub fn scan(config: ScanConfig) -> () {
         builder.add(root);
     }
 
-    let (files_tx, parsed_rx) = start_parse_pool();
+    builder.git_exclude(config.gitignore);
+
+    let (files_tx, parsed_rx) = start_parse_pool(config.track_cas);
     let config = Arc::new(config);
 
     let (tx, rx) = kanal::bounded(1000);
@@ -96,20 +107,28 @@ pub fn scan(config: ScanConfig) -> () {
             let mut state =
                 ThreadState::new(Arc::clone(&config), update_every, update_tx, files_tx);
 
-            Box::new(move |entry| {
-                let Ok(entry) = entry else {
-                    return WalkState::Continue;
-                };
+            Box::new({
+                let config = Arc::clone(&config);
+                move |entry| {
+                    let Ok(entry) = entry else {
+                        return WalkState::Continue;
+                    };
 
-                let Some(file_type) = entry.file_type() else {
-                    return WalkState::Continue;
-                };
+                    let Some(file_type) = entry.file_type() else {
+                        return WalkState::Continue;
+                    };
 
-                if file_type.is_file() {
-                    state.mark(entry);
+                    if file_type.is_dir() && config.ignore_globs.is_match(entry.path()) {
+                        // println!("skipping dir: {}", entry.path().display());
+                        return WalkState::Skip;
+                    }
+
+                    if file_type.is_file() {
+                        state.mark(entry);
+                    }
+
+                    WalkState::Continue
                 }
-
-                WalkState::Continue
             })
         });
     });
@@ -122,15 +141,14 @@ pub fn scan(config: ScanConfig) -> () {
     progress.enable_steady_tick(Duration::from_millis(50));
     progress.set_message(format!("found {:4} certs", parsed));
 
+    let mut certs = Vec::new();
+
     loop {
         match parsed_rx.try_recv() {
             Ok(Some((entry, pem))) => {
                 match pem {
                     ScanResult::Cert(pem) => {
-                        let is_ca =
-                            pem.public_key.usage.key_cert_sign || pem.public_key.usage.crl_sign;
-
-                        if !is_ca {
+                        if pem.classification.depth == CertDepth::Leaf {
                             progress.println(format!(
                                 "[{:5}] parsed leaf cert in {}:{}:{}",
                                 parsed,
@@ -141,9 +159,11 @@ pub fn scan(config: ScanConfig) -> () {
                             parsed += 1;
                         }
 
+                        certs.push((entry.clone(), pem));
+
                         progress.set_message(format!("found {parsed} certs in"));
                     }
-                    ScanResult::Error(span, error) => {
+                    ScanResult::Error(_span, _error) => {
                         // progress.println(format!(
                         //     "[{:5}] failed to parse {:?} in {}:{}:{:?} {error}",
                         //     parsed,
@@ -169,7 +189,28 @@ pub fn scan(config: ScanConfig) -> () {
 
     progress.set_message(format!("found {:4} certs", parsed));
     progress.finish_using_style();
-    println!("found {:4} certs", parsed);
+    println!("found {:4} certs in {:.4?}", parsed, start.elapsed());
+
+    let mut root_paths: BTreeMap<Option<&Path>, Vec<(&Path, &Spanned<Cert>)>> = BTreeMap::new();
+
+    for (entry, cert) in certs.iter() {
+        root_paths
+            .entry(entry.path().parent())
+            .or_default()
+            .push((entry.path(), cert));
+    }
+
+    for (root, certs) in root_paths {
+        println!("{}", root.unwrap().display());
+
+        for (path, cert) in certs {
+            println!(
+                "\t{}: {:?}",
+                path.file_name().unwrap().to_str().unwrap(),
+                cert.aki.as_ref().unwrap()
+            );
+        }
+    }
 }
 
 pub struct GlobalScanState {}
@@ -208,6 +249,7 @@ impl ThreadState {
         if self.config.file_types.is_match(entry.path())
             && !self.config.ignore_globs.is_match(entry.path())
         {
+            // println!("adding file: {}", entry.path().display());
             self.batch.push(entry);
         }
 
@@ -252,7 +294,9 @@ pub enum ScanResult {
     Error(Spanned<String>, anyhow::Error),
 }
 
-pub fn start_parse_pool() -> (
+pub fn start_parse_pool(
+    track_cas: bool,
+) -> (
     kanal::Sender<Vec<DirEntry>>,
     kanal::Receiver<(DirEntry, ScanResult)>,
 ) {
@@ -281,6 +325,12 @@ pub fn start_parse_pool() -> (
                                 let (span, line, col) = (pem.span(), pem.line(), pem.col());
                                 if let Some(cert) = pem.into_cert() {
                                     let span = Spanned::new(cert, span, line, col);
+
+                                    let is_ca = span.classification.is_ca;
+                                    if !track_cas && is_ca {
+                                        continue;
+                                    }
+
                                     parsed_tx
                                         .send((entry.clone(), ScanResult::Cert(span)))
                                         .unwrap();
@@ -345,12 +395,14 @@ pub struct ScanState {
     failed: usize,
 }
 
-impl From<pls_settings::ScanSettings> for ScanConfig {
-    fn from(settings: pls_settings::ScanSettings) -> Self {
+impl From<pls_settings::Settings> for ScanConfig {
+    fn from(settings: pls_settings::Settings) -> Self {
         Self {
-            roots: settings.roots,
-            file_types: build_globset(&settings.file_types),
-            ignore_globs: build_globset(&settings.ignore_paths),
+            roots: settings.scanning.roots,
+            file_types: build_globset(&settings.scanning.file_types),
+            ignore_globs: build_globset(&settings.scanning.ignore_paths),
+            gitignore: settings.scanning.respect_gitignore,
+            track_cas: settings.reporting.track_cas,
         }
     }
 }
