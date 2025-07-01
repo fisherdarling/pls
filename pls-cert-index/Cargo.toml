@@ -1,0 +1,9 @@
+[package]
+name = "pls-cert-index"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+pls-types = { path = "../pls-types" }
+pls-parser = { path = "../pls-parser" }
+ignore = { workspace = true }

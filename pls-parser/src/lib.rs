@@ -148,7 +148,7 @@ pub enum ParsedPem {
     DhParams(DhParams),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Spanned<T> {
     span: Range<usize>,
     line: usize,

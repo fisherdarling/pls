@@ -16,6 +16,12 @@ impl Issuer {
     }
 }
 
+impl std::fmt::Display for Issuer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.subject)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

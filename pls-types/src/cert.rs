@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use crate::{
     expiry::Expiry,
-    id::{Aki, Digests, SerialNumber, Ski},
+    id::{Aki, Digests, Serial, Ski},
     issuer::Issuer,
     key::CertPublicKey,
     sans::Sans,
@@ -20,7 +20,7 @@ pub struct Cert {
     pub sans: Sans,
     pub issuer: Issuer,
     pub public_key: CertPublicKey,
-    pub serial: SerialNumber,
+    pub serial: Serial,
     pub ski: Option<Ski>,
     pub aki: Option<Aki>,
     pub basic_constraints: BasicConstraints,
@@ -52,7 +52,7 @@ impl Cert {
             sans: Sans::from_cert(cert),
             issuer: Issuer::from_cert(cert),
             public_key: CertPublicKey::from_cert(cert).context("parsing public key")?,
-            serial: SerialNumber::from_cert(cert),
+            serial: Serial::from_cert(cert),
             ski: Ski::from_cert(cert),
             aki: Aki::from_cert(cert),
             basic_constraints: BasicConstraints::from_cert(cert)
@@ -120,7 +120,7 @@ pub enum CertUsage {
     Unknown,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum CertDepth {
     Leaf,

@@ -13,3 +13,5 @@ pub mod sans;
 pub mod signature;
 pub mod subject;
 pub mod util;
+
+pub use jiff::Timestamp;

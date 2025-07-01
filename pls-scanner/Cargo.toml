@@ -11,7 +11,7 @@ gxhash = "3.5.0"
 ignore = { version = "0.4.23", features = ["simd-accel"] }
 memmap2 = "0.9.5"
 globset = { workspace = true }
-kanal = "0.1.1"
+kanal = { workspace = true }
 fastrand = "2.3"
 rayon = "1.10"
 pls-parser = { path = "../pls-parser" }

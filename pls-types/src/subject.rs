@@ -6,13 +6,43 @@ use boring::{
 };
 use serde::Serialize;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Subject {
     pub common_name: Option<Arc<str>>,
     pub organization: Option<Arc<str>>,
     pub organization_unit: Option<Arc<str>>,
     pub country: Option<Arc<str>>,
     pub state: Option<Arc<str>>,
+}
+
+impl std::fmt::Display for Subject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut parts = Vec::new();
+
+        if let Some(country) = &self.country {
+            parts.push(format!("C={}", country.as_ref()));
+        }
+
+        if let Some(state) = &self.state {
+            parts.push(format!("ST={}", state.as_ref()));
+        }
+
+        if let Some(organization) = &self.organization {
+            parts.push(format!("O={}", organization.as_ref()));
+        }
+
+        if let Some(organization_unit) = &self.organization_unit {
+            parts.push(format!("OU={}", organization_unit.as_ref()));
+        }
+
+        if let Some(common_name) = &self.common_name {
+            parts.push(format!("CN={}", common_name.as_ref()));
+        }
+
+        write!(f, "{}", parts.join(", "))?;
+
+        Ok(())
+    }
 }
 
 impl Subject {

@@ -7,13 +7,19 @@ use crate::util::Hex;
 
 /// Serial Number
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
-pub struct SerialNumber(Hex);
+pub struct Serial(Hex);
 
-impl SerialNumber {
+impl Serial {
     pub fn from_cert(cert: &X509) -> Self {
         let serial_number = cert.serial_number();
         let bytes = serial_number.to_bn().unwrap().to_vec();
         Self(Hex::from(bytes.as_slice()))
+    }
+}
+
+impl std::fmt::Display for Serial {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.0)
     }
 }
 
@@ -67,7 +73,7 @@ mod tests {
     fn extract_serial_number() {
         let cert = include_bytes!("../../test-data/certs/cloudflare.com.pem");
         let cert = X509::from_pem(cert).unwrap();
-        let serial_number = SerialNumber::from_cert(&cert);
+        let serial_number = Serial::from_cert(&cert);
         insta::assert_debug_snapshot!(serial_number);
     }
 

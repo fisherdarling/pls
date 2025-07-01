@@ -1,25 +1,39 @@
 [workspace]
-members = ["pls-parser", "pls-scanner", "pls-settings", "pls-types"]
+members = [
+    "pls-cert-index",
+    "pls-cli",
+    "pls-parser",
+    "pls-scanner",
+    "pls-settings",
+    "pls-types",
+    "simple-progress",
+]
 resolver = "3"
 
 [workspace.dependencies]
+# workspace dependencies
+simple-progress = { path = "simple-progress" }
+
+# external dependencies
 anyhow = "1"
 base64 = "0.22"
 bon = "3"
-boring = { git = "https://github.com/fisherdarling/boring", rev = "3689ea8e658ba07f9af510423ef2a87669071913", features = [
+boring = { git = "https://github.com/fisherdarling/boring", rev = "0bc15c8cff144aba136cce8741ea74c2cb5dc696", features = [
     "rpk",
     "pq-experimental",
     "kx-safe-default",
     "kx-client-pq-supported",
 ] }
-boring-sys = { git = "https://github.com/fisherdarling/boring", rev = "3689ea8e658ba07f9af510423ef2a87669071913", features = [
+boring-sys = { git = "https://github.com/fisherdarling/boring", rev = "0bc15c8cff144aba136cce8741ea74c2cb5dc696", features = [
     "rpk",
     "pq-experimental",
 ] }
 indicatif = "0.17"
-tokio-boring = { git = "https://github.com/fisherdarling/boring", rev = "3689ea8e658ba07f9af510423ef2a87669071913" }
+tokio-boring = { git = "https://github.com/fisherdarling/boring", rev = "0bc15c8cff144aba136cce8741ea74c2cb5dc696" }
 bytes = "1.10"
 clap = { version = "4.5.37", features = ["derive"] }
+clap-verbosity-flag = { version = "3.0.2", features = ["tracing"] }
+color-eyre = "0.6.3"
 foundations = { version = "4.5", default-features = false }
 gxhash = "3.5.0"
 globset = "0.4.0"
@@ -31,10 +45,13 @@ jiff = { version = "0.2.13", features = ["serde"] }
 regex = { version = "1" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
+kanal = "0.1.0"
 
-[patch."https://github.com/fisherdarling/boring"]
-boring = { path = "../../Opensource/boring/boring" }
-boring-sys = { path = "../../Opensource/boring/boring-sys" }
+# [patch."https://github.com/fisherdarling/boring"]
+# boring = { path = "../../Opensource/boring/boring" }
+# boring-sys = { path = "../../Opensource/boring/boring-sys" }
 # tokio-boring = { path = "../../Opensource/boring/tokio-boring" }
 
 # [package]
@@ -76,8 +93,6 @@ boring-sys = { path = "../../Opensource/boring/boring-sys" }
 #     "rt-multi-thread",
 # ] }
 # tokio-boring = { git = "https://github.com/fisherdarling/boring", rev = "9d3e6b2212b65a4074c31e784d21b621ecb0cff8" }
-# tracing = "0.1.41"
-# tracing-subscriber = "0.3.19"
 # url = "2.5.4"
 
 [patch.crates-io]

@@ -25,6 +25,37 @@ pub struct ScanSettings {
     /// Respect gitignore when scanning.
     #[serde(default = "default_respect_gitignore")]
     pub respect_gitignore: bool,
+
+    /// Determines which certificates are included in results.
+    /// E.g. include only leaf certificates, only intermediate certificates, or all certificates.
+    #[serde(default)]
+    pub levels: CertScanLevels,
+}
+
+/// Settings for certificate scanning.
+#[settings]
+pub struct CertScanLevels {
+    /// Scan leaf certificates.
+    #[serde(default = "default_scan_leaf_certs")]
+    pub leaf: bool,
+    /// Scan intermediate certificates.
+    #[serde(default = "default_scan_intermediate_certs")]
+    pub intermediate: bool,
+    /// Scan root certificates.
+    #[serde(default = "default_scan_root_certs")]
+    pub root: bool,
+}
+
+fn default_scan_leaf_certs() -> bool {
+    true
+}
+
+fn default_scan_intermediate_certs() -> bool {
+    false
+}
+
+fn default_scan_root_certs() -> bool {
+    false
 }
 
 fn default_roots() -> Vec<PathBuf> {
