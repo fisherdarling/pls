@@ -1,11 +1,11 @@
 [workspace]
 members = [
-    "pls-cert-index",
-    "pls-cli",
-    "pls-parser",
-    "pls-scanner",
-    "pls-settings",
-    "pls-types",
+    "certs-scan-index",
+    "certs-cli",
+    "certs-parser",
+    "certs-scanner",
+    "certs-settings",
+    "certs-types",
     "simple-progress",
 ]
 resolver = "3"

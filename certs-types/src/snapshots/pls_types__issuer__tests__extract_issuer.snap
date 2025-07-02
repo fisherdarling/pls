@@ -1,0 +1,19 @@
+---
+source: certs-types/src/issuer.rs
+expression: issuer
+---
+Issuer {
+    subject: Subject {
+        common_name: Some(
+            "WE1",
+        ),
+        organization: Some(
+            "Google Trust Services",
+        ),
+        organization_unit: None,
+        country: Some(
+            "US",
+        ),
+        state: None,
+    },
+}

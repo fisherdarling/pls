@@ -1,0 +1,14 @@
+---
+source: certs-types/src/key.rs
+assertion_line: 295
+expression: extended_key_usage
+---
+ExtendedKeyUsage {
+    critical: false,
+    server_auth: true,
+    client_auth: false,
+    code_signing: false,
+    email_protection: false,
+    time_stamping: false,
+    ocsp_signing: false,
+}

@@ -1,0 +1,23 @@
+[package]
+name = "certs-cli"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "certs"
+path = "src/bin/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+foundations = { workspace = true }
+certs-types = { path = "../certs-types" }
+certs-settings = { path = "../certs-settings" }
+certs-parser = { path = "../certs-parser" }
+certs-scanner = { path = "../certs-scanner" }
+certs-scan-index = { path = "../certs-scan-index" }
+clap = { workspace = true, features = ["derive"] }
+clap-verbosity-flag = { workspace = true, features = ["tracing"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+kanal = { workspace = true }
+simple-progress = { workspace = true }

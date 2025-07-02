@@ -1,0 +1,96 @@
+---
+source: certs-types/src/cert.rs
+expression: cert
+---
+Cert {
+    subject: Subject {
+        common_name: Some(
+            "cloudflare.com",
+        ),
+        organization: None,
+        organization_unit: None,
+        country: None,
+        state: None,
+    },
+    expiry: Expiry {
+        not_before: 2024-11-30T23:15:58Z,
+        not_after: 2025-03-01T00:15:55Z,
+    },
+    sans: Sans {
+        dns: [
+            "cloudflare.com",
+            "*.amp.cloudflare.com",
+            "*.cloudflare.com",
+            "*.dns.cloudflare.com",
+            "*.staging.cloudflare.com",
+        ],
+        ip: [],
+        email: [],
+        uri: [],
+    },
+    issuer: Issuer {
+        subject: Subject {
+            common_name: Some(
+                "WE1",
+            ),
+            organization: Some(
+                "Google Trust Services",
+            ),
+            organization_unit: None,
+            country: Some(
+                "US",
+            ),
+            state: None,
+        },
+    },
+    public_key: CertPublicKey {
+        usage: KeyUsage {
+            critical: true,
+            digital_signature: true,
+            non_repudiation: false,
+            key_encipherment: false,
+            data_encipherment: false,
+            key_agreement: false,
+            key_cert_sign: false,
+            crl_sign: false,
+            encipher_only: false,
+            decipher_only: false,
+        },
+        key: Ec {
+            curve: Nid {
+                raw: 415,
+                long_name: "prime256v1",
+                short_name: "prime256v1",
+            },
+            point: 02fc29be7644b44d981051859e504de37fd7dc15cfc33e30f1a00c5c456c641df5,
+        },
+        spki: 3059301306072a8648ce3d020106082a8648ce3d03010703420004fc29be7644b44d981051859e504de37fd7dc15cfc33e30f1a00c5c456c641df5bae83e41f11384cb854536a8e6213fb830b69076a783541839c22cb5716168b2,
+    },
+    serial: SerialNumber(
+        6da06fdfa90329010d3dd3414a3c2f28,
+    ),
+    ski: Some(
+        Ski(
+            ba24f1a98a5769343f9ae873375e8973f06922ee,
+        ),
+    ),
+    aki: Some(
+        Aki(
+            9077923567c4ffa8cca9e67bd980797bcc93f938,
+        ),
+    ),
+    signature: Signature {
+        alg: Nid {
+            raw: 794,
+            long_name: "ecdsa-with-SHA256",
+            short_name: "ecdsa-with-SHA256",
+        },
+        value: 3046022100fe06845bc86825b16dcaf4fbafbd2be220f1be979333c062c462cbccf12bc569022100c49de269efeeae0a9a29bbf6528f080f585e3cf4053b8e4452b0746ebbbb645d,
+    },
+    fingerprints: Digests {
+        md5: b756f75c428239bd60990a4728eb3bfb,
+        sha1: c9d6801195cdc64ad7763253fb379317fa9a2d34,
+        sha256: c800f4e94178afe74079047e82445f10e25cb6f6c235ff2598838f87a985391e,
+    },
+    der: 308203f53082039aa00302010202106da06fdfa90329010d3dd3414a3c2f28300a06082a8648ce3d040302303b310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531301e170d3234313133303233313535385a170d3235303330313030313535355a3019311730150603550403130e636c6f7564666c6172652e636f6d3059301306072a8648ce3d020106082a8648ce3d03010703420004fc29be7644b44d981051859e504de37fd7dc15cfc33e30f1a00c5c456c641df5bae83e41f11384cb854536a8e6213fb830b69076a783541839c22cb5716168b2a38202a03082029c300e0603551d0f0101ff04040302078030130603551d25040c300a06082b06010505070301300c0603551d130101ff04023000301d0603551d0e04160414ba24f1a98a5769343f9ae873375e8973f06922ee301f0603551d230418301680149077923567c4ffa8cca9e67bd980797bcc93f938305e06082b0601050507010104523050302706082b06010505073001861b687474703a2f2f6f2e706b692e676f6f672f732f7765312f626141302506082b060105050730028619687474703a2f2f692e706b692e676f6f672f7765312e63727430710603551d11046a3068820e636c6f7564666c6172652e636f6d82142a2e616d702e636c6f7564666c6172652e636f6d82102a2e636c6f7564666c6172652e636f6d82142a2e646e732e636c6f7564666c6172652e636f6d82182a2e73746167696e672e636c6f7564666c6172652e636f6d30130603551d20040c300a3008060667810c01020130360603551d1f042f302d302ba029a0278625687474703a2f2f632e706b692e676f6f672f7765312f4f757147624a6b7a7768552e63726c30820105060a2b06010401d6790204020481f60481f300f1007600ccfb0f6a85710965fe959b53cee9b27c22e9855c0d978db6a97e54c0fe4c0db0000001937f92fc7000000403004730450221009103b4b9d517b4e9b0bdcb3b35b97375816c5aa86ce6bc63c608479f2103672702204a8566cc9b64734e2ec24ebf20005c84c0e3a76e103940747e6f619b85937af9007700cf1156eed52e7caff3875bd9692e9be91a71674ab017ecac01d25b77cecc3b08000001937f92fb860000040300483046022100ba678581bbb5a298347db96ccb74b31aa49f80be73b19b391e7cd53d67908013022100fe1c3d341c435bf8bb157e5acf21c37a6d4a67660445f9463d9c219072ea4e3a300a06082a8648ce3d0403020349003046022100fe06845bc86825b16dcaf4fbafbd2be220f1be979333c062c462cbccf12bc569022100c49de269efeeae0a9a29bbf6528f080f585e3cf4053b8e4452b0746ebbbb645d,
+}

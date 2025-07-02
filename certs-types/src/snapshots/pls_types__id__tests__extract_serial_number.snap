@@ -1,0 +1,7 @@
+---
+source: certs-types/src/id.rs
+expression: serial_number
+---
+SerialNumber(
+    6da06fdfa90329010d3dd3414a3c2f28,
+)

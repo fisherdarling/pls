@@ -1,0 +1,10 @@
+[package]
+name = "certs-settings"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+foundations = { workspace = true, default-features = false, features = [
+  "settings",
+  "metrics",
+] }

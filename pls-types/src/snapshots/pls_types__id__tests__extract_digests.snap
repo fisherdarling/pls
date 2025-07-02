@@ -1,9 +1,0 @@
----
-source: pls-types/src/id.rs
-expression: digests
----
-Digests {
-    md5: b756f75c428239bd60990a4728eb3bfb,
-    sha1: c9d6801195cdc64ad7763253fb379317fa9a2d34,
-    sha256: c800f4e94178afe74079047e82445f10e25cb6f6c235ff2598838f87a985391e,
-}

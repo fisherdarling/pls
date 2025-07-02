@@ -235,6 +235,88 @@ dependencies = [
 ]
 
 [[package]]
+name = "certs-cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "certs-parser",
+ "certs-scan-index",
+ "certs-scanner",
+ "certs-settings",
+ "certs-types",
+ "clap",
+ "clap-verbosity-flag",
+ "foundations",
+ "kanal",
+ "simple-progress",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "certs-parser"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base64",
+ "boring",
+ "bytes",
+ "certs-types",
+ "escape8259",
+ "kanal",
+ "regex",
+]
+
+[[package]]
+name = "certs-scan-index"
+version = "0.1.0"
+dependencies = [
+ "certs-parser",
+ "certs-types",
+ "ignore",
+]
+
+[[package]]
+name = "certs-scanner"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bon",
+ "certs-parser",
+ "certs-settings",
+ "certs-types",
+ "clap",
+ "fastrand",
+ "globset",
+ "gxhash",
+ "ignore",
+ "indicatif",
+ "kanal",
+ "memmap2",
+ "rayon",
+]
+
+[[package]]
+name = "certs-settings"
+version = "0.1.0"
+dependencies = [
+ "foundations",
+]
+
+[[package]]
+name = "certs-types"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "boring",
+ "bytes",
+ "insta",
+ "jiff",
+ "regex",
+ "serde",
+]
+
+[[package]]
 name = "cexpr"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1024,88 +1106,6 @@ name = "pin-utils"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
-
-[[package]]
-name = "pls-cert-index"
-version = "0.1.0"
-dependencies = [
- "ignore",
- "pls-parser",
- "pls-types",
-]
-
-[[package]]
-name = "pls-cli"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "clap-verbosity-flag",
- "foundations",
- "kanal",
- "pls-cert-index",
- "pls-parser",
- "pls-scanner",
- "pls-settings",
- "pls-types",
- "simple-progress",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "pls-parser"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "base64",
- "boring",
- "bytes",
- "escape8259",
- "kanal",
- "pls-types",
- "regex",
-]
-
-[[package]]
-name = "pls-scanner"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bon",
- "clap",
- "fastrand",
- "globset",
- "gxhash",
- "ignore",
- "indicatif",
- "kanal",
- "memmap2",
- "pls-parser",
- "pls-settings",
- "pls-types",
- "rayon",
-]
-
-[[package]]
-name = "pls-settings"
-version = "0.1.0"
-dependencies = [
- "foundations",
-]
-
-[[package]]
-name = "pls-types"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "boring",
- "bytes",
- "insta",
- "jiff",
- "regex",
- "serde",
-]
 
 [[package]]
 name = "portable-atomic"

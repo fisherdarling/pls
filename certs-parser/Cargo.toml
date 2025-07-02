@@ -1,0 +1,18 @@
+[package]
+name = "certs-parser"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "certs-parser"
+path = "bin/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+base64 = { workspace = true }
+boring = { workspace = true }
+bytes = { workspace = true }
+regex = { version = "1", default-features = false, features = ["std", "perf"] }
+escape8259 = { workspace = true }
+certs-types = { path = "../certs-types" }
+kanal = { workspace = true }
