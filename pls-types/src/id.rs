@@ -1,4 +1,3 @@
-use std::sync::Arc;
 
 use boring::x509::X509;
 use serde::Serialize;

@@ -1,8 +1,8 @@
 use anyhow::Context;
 use boring::x509::X509;
 use jiff::{
-    Timestamp, Zoned,
-    tz::{Offset, TimeZone},
+    Timestamp,
+    tz::Offset,
 };
 use serde::Serialize;
 

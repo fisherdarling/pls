@@ -1,10 +1,9 @@
 use boring::x509::X509;
-use bytes::Bytes;
 use serde::Serialize;
 
 use crate::{
     nid::Nid,
-    util::{Hex, HexDebug},
+    util::Hex,
 };
 
 #[derive(Debug, Clone, Serialize)]

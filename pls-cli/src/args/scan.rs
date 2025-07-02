@@ -1,10 +1,4 @@
-use std::{
-    collections::HashSet,
-    fmt::Display,
-    io::Write as _,
-    path::PathBuf,
-    time::{Duration, Instant},
-};
+use std::{collections::HashSet, path::PathBuf};
 
 use anyhow::Context as _;
 use clap::Parser;

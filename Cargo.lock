@@ -1896,11 +1896,3 @@ checksum = "56c1936c4cc7a1c9ab21a1ebb602eb942ba868cbd44a99cb7cdc5892335e1c85"
 dependencies = [
  "linked-hash-map",
 ]
-
-[[patch.unused]]
-name = "boring"
-version = "4.15.0"
-
-[[patch.unused]]
-name = "boring-sys"
-version = "4.15.0"

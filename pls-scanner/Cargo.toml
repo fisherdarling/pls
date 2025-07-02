@@ -18,6 +18,3 @@ pls-parser = { path = "../pls-parser" }
 pls-types = { path = "../pls-types" }
 pls-settings = { path = "../pls-settings" }
 indicatif = { workspace = true }
-
-[profile.release]
-debug = true
