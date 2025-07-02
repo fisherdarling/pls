@@ -1,15 +1,14 @@
 use std::{
     borrow::Cow,
     cell::LazyCell,
-    ops::{Deref, Range},
+    ops::Range,
     sync::Arc,
 };
 
 use anyhow::Context;
 use bytes::Bytes;
 use regex::bytes::{Regex, RegexBuilder};
-
-use crate::Spanned;
+use pls_types::Spanned;
 
 thread_local! {
   static PEM_REGEX: Regex = RegexBuilder::new(r"(?P<pem>-----BEGIN (?P<header_label>.*?)-----(?:\n|\\n)?(?P<cert_data>.*?)(?:\n|\\n)?-----END .*?-----)")
@@ -34,35 +33,35 @@ pub fn pems<'a>(data: &'a [u8]) -> impl Iterator<Item = Spanned<RawPem<'a>>> {
                 let (cert_data_line, cert_data_col) =
                     determine_line_and_column(&newlines, cert_data.start());
 
-                let label = Spanned {
-                    span: header_label.range(),
-                    line: header_label_line,
-                    col: header_label_col,
-                    data: header_label.as_bytes(),
-                };
+                let label = Spanned::new(
+                    header_label.as_bytes(),
+                    header_label.range(),
+                    header_label_line,
+                    header_label_col,
+                );
 
-                let cert_data = Spanned {
-                    span: cert_data.range(),
-                    line: cert_data_line,
-                    col: cert_data_col,
-                    data: cert_data.as_bytes(),
-                };
+                let cert_data = Spanned::new(
+                    cert_data.as_bytes(),
+                    cert_data.range(),
+                    cert_data_line,
+                    cert_data_col,
+                );
 
-                Spanned {
-                    span: pem.range(),
-                    line: pem_line,
-                    col: pem_col,
-                    data: RawPem {
+                Spanned::new(
+                    RawPem {
                         label,
                         cert_data,
-                        raw_pem: Spanned {
-                            span: pem.range(),
-                            line: pem_line,
-                            col: pem_col,
-                            data: pem.as_bytes(),
-                        },
+                        raw_pem: Spanned::new(
+                            pem.as_bytes(),
+                            pem.range(),
+                            pem_line,
+                            pem_col,
+                        ),
                     },
-                }
+                    pem.range(),
+                    pem_line,
+                    pem_col,
+                )
             })
     })
 }
@@ -123,10 +122,10 @@ impl RawPem<'_> {
     }
 
     pub fn decode(&self) -> anyhow::Result<DecodedRawPem> {
-        let label = std::str::from_utf8(self.label.data).context("utf8 decoding cert label")?;
+        let label = std::str::from_utf8(self.label.data()).context("utf8 decoding cert label")?;
 
         let str_cert_data =
-            std::str::from_utf8(self.cert_data.data).context("utf8 decoding cert data")?;
+            std::str::from_utf8(self.cert_data.data()).context("utf8 decoding cert data")?;
         let unescaped_cert_data = escape8259::unescape(str_cert_data)
             .context("unescaping cert data")
             .map(Cow::Owned)
@@ -139,18 +138,18 @@ impl RawPem<'_> {
         let cert_data = Bytes::from(decoded_cert_data);
 
         Ok(DecodedRawPem {
-            label: Spanned {
-                span: self.label.span.clone(),
-                line: self.label.line,
-                col: self.label.col,
-                data: Arc::from(label),
-            },
-            decoded_cert_data: Spanned {
-                span: self.cert_data.span.clone(),
-                line: self.cert_data.line,
-                col: self.cert_data.col,
-                data: cert_data,
-            },
+            label: Spanned::new(
+                Arc::from(label),
+                self.label.span(),
+                self.label.line(),
+                self.label.col(),
+            ),
+            decoded_cert_data: Spanned::new(
+                cert_data,
+                self.cert_data.span(),
+                self.cert_data.line(),
+                self.cert_data.col(),
+            ),
         })
     }
 }
@@ -171,27 +170,6 @@ impl DecodedRawPem {
     }
 }
 
-impl<T> Spanned<T> {
-    pub fn span(&self) -> Range<usize> {
-        self.span.clone()
-    }
-
-    pub fn line(&self) -> usize {
-        self.line
-    }
-
-    pub fn col(&self) -> usize {
-        self.col
-    }
-}
-
-impl<T> Deref for Spanned<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.data
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -268,13 +246,13 @@ mod tests {
         assert_eq!(label.span(), 14..25);
         assert_eq!(label.line(), 1);
         assert_eq!(label.col(), 14);
-        assert_eq!(label.data, b"CERTIFICATE");
+        assert_eq!(label.data(), b"CERTIFICATE");
 
         let data = pem.cert_data();
         assert_eq!(data.span(), 30..62);
         assert_eq!(data.line(), 1);
         assert_eq!(data.col(), 30);
-        assert_eq!(data.data, br"\\nHello, World!\\nAnd goodbye!\");
+        assert_eq!(data.data(), br"\\nHello, World!\\nAnd goodbye!\");
     }
 
     #[test]
@@ -282,7 +260,7 @@ mod tests {
         let data = include_bytes!("../../test-data/certs/cloudflare.com.pem");
         let pem = pems(data).next().unwrap();
         let decoded = pem.decode().unwrap();
-        assert_eq!(&*decoded.label.data, "CERTIFICATE");
-        assert_eq!(decoded.decoded_cert_data.data.len(), 1017);
+        assert_eq!(&**decoded.label.data(), "CERTIFICATE");
+        assert_eq!(decoded.decoded_cert_data.data().len(), 1017);
     }
 }

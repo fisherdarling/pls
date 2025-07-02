@@ -1,8 +1,8 @@
 use std::{collections::BTreeMap, path::PathBuf};
 
-use pls_parser::Spanned;
 use pls_types::{
     Timestamp,
+    Spanned,
     cert::{Cert, CertDepth},
     subject::Subject,
 };

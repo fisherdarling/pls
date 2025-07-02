@@ -42,9 +42,9 @@ use globset::{Glob, GlobSet, GlobSetBuilder};
 use ignore::{DirEntry, WalkBuilder, WalkState};
 use kanal::Receiver;
 use memmap2::Mmap;
-use pls_parser::{ParsedItem, Spanned};
+use pls_parser::ParsedItem;
 use pls_settings::CertScanLevels;
-use pls_types::cert::{Cert, CertDepth};
+use pls_types::{Spanned, cert::{Cert, CertDepth}};
 
 #[derive(Clone, Builder)]
 pub struct ScanConfig {

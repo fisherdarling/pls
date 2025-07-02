@@ -5,6 +5,7 @@ use pls_types::{
     cert::Cert,
     csr::Csr,
     key::{DhParams, EcPrivateKey, PrivateKey, PublicKey, RsaPrivateKey},
+    Spanned,
 };
 
 mod lexer;
@@ -21,12 +22,12 @@ impl<'a> Parser<'a> {
     pub fn parse(&'a self) -> impl Iterator<Item = ParsedItem<'a>> {
         lexer::pems(self.data).map(move |pem| match pem.decode() {
             Ok(decoded) => {
-                let spanned_parsed_pem = SpannedParsedPem::from_raw(Spanned {
-                    span: pem.span(),
-                    line: pem.line(),
-                    col: pem.col(),
-                    data: decoded,
-                });
+                let spanned_parsed_pem = SpannedParsedPem::from_raw(Spanned::new(
+                    decoded,
+                    pem.span(),
+                    pem.line(),
+                    pem.col(),
+                ));
 
                 match spanned_parsed_pem {
                     Ok(parsed_pem) => ParsedItem::SpannedParsedPem(parsed_pem),
@@ -82,51 +83,51 @@ impl SpannedParsedPem {
     }
 
     pub fn der(&self) -> &[u8] {
-        self.raw.data.der()
+        self.raw.data().der()
     }
 
     fn from_raw(raw: Spanned<lexer::DecodedRawPem>) -> Result<Self, anyhow::Error> {
         let value = match &***raw.label() {
             "CERTIFICATE" => {
-                ParsedPem::Cert(Cert::from_der(raw.data.der()).with_context(|| {
+                ParsedPem::Cert(Cert::from_der(raw.data().der()).with_context(|| {
                     format!(
                         "parsing CERTIFICATE at {}:{}, der={}",
                         raw.line(),
                         raw.col(),
-                        boring::base64::encode_block(raw.data.der()),
+                        boring::base64::encode_block(raw.data().der()),
                     )
                 })?)
             }
             "CERTIFICATE REQUEST" => ParsedPem::Csr(
-                Csr::from_der(raw.data.der())
+                Csr::from_der(raw.data().der())
                     .with_context(|| format!("parsing CSR at {}:{}", raw.line(), raw.col()))?,
             ),
             "RSA PRIVATE KEY" => {
-                let key = RsaPrivateKey::from_der(raw.data.der()).with_context(|| {
+                let key = RsaPrivateKey::from_der(raw.data().der()).with_context(|| {
                     format!("parsing RSA PRIVATE KEY at {}:{}", raw.line(), raw.col(),)
                 })?;
                 ParsedPem::RsaPrivateKey(key)
             }
             "PUBLIC KEY" => {
-                let key = PublicKey::from_der(raw.data.der()).with_context(|| {
+                let key = PublicKey::from_der(raw.data().der()).with_context(|| {
                     format!("parsing PUBLIC KEY at {}:{}", raw.line(), raw.col())
                 })?;
                 ParsedPem::PublicKey(key)
             }
             "DH PARAMETERS" => {
-                let params = DhParams::from_der(raw.data.der()).with_context(|| {
+                let params = DhParams::from_der(raw.data().der()).with_context(|| {
                     format!("parsing DH PARAMETERS at {}:{}", raw.line(), raw.col())
                 })?;
                 ParsedPem::DhParams(params)
             }
             "PRIVATE KEY" => {
-                let key = PrivateKey::from_der(raw.data.der()).with_context(|| {
+                let key = PrivateKey::from_der(raw.data().der()).with_context(|| {
                     format!("parsing PRIVATE KEY at {}:{}", raw.line(), raw.col())
                 })?;
                 ParsedPem::PrivateKey(key)
             }
             "EC PRIVATE KEY" => {
-                let key = EcPrivateKey::from_der(raw.data.der()).with_context(|| {
+                let key = EcPrivateKey::from_der(raw.data().der()).with_context(|| {
                     format!("parsing EC PRIVATE KEY at {}:{}", raw.line(), raw.col())
                 })?;
                 ParsedPem::EcPrivateKey(key)
@@ -148,24 +149,6 @@ pub enum ParsedPem {
     DhParams(DhParams),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Spanned<T> {
-    span: Range<usize>,
-    line: usize,
-    col: usize,
-    data: T,
-}
-
-impl<T> Spanned<T> {
-    pub fn new(data: T, span: Range<usize>, line: usize, col: usize) -> Self {
-        Self {
-            data,
-            span,
-            line,
-            col,
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {
