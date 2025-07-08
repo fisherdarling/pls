@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::Context as _;
+use certs_display::OutputFormat;
 use certs_settings::Settings;
 use clap_verbosity_flag::Verbosity;
 
@@ -45,7 +46,7 @@ impl Ctx {
             Settings::default()
         };
 
-        let output = args.output.clone().into();
+        let output: OutputFormat = args.output.clone().into();
         let verbosity = args.verbose.clone();
         let is_terminal = std::io::stdout().is_terminal();
 
@@ -71,11 +72,4 @@ impl Ctx {
     pub fn is_terminal(&self) -> bool {
         self.is_terminal
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum OutputFormat {
-    Json,
-    Text,
-    Pem,
 }

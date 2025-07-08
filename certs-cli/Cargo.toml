@@ -10,6 +10,7 @@ path = "src/bin/main.rs"
 [dependencies]
 anyhow = { workspace = true }
 foundations = { workspace = true }
+certs-display = { workspace = true }
 certs-types = { path = "../certs-types" }
 certs-settings = { path = "../certs-settings" }
 certs-parser = { path = "../certs-parser" }

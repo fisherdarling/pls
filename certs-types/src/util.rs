@@ -29,6 +29,10 @@ impl Hex {
     pub fn new(bytes: Bytes) -> Self {
         Self(bytes)
     }
+
+    pub fn from_hex(data: &str) -> anyhow::Result<Self> {
+        Ok(Self(decode_hex(data)?))
+    }
 }
 
 impl From<Hex> for Bytes {
@@ -41,4 +45,21 @@ impl<T: AsRef<[u8]>> From<T> for Hex {
     fn from(bytes: T) -> Self {
         Self(Bytes::copy_from_slice(bytes.as_ref()))
     }
+}
+
+fn decode_hex(data: &str) -> anyhow::Result<Bytes> {
+    let mut bytes = Vec::new();
+
+    if data.len() % 2 != 0 {
+        anyhow::bail!("invalid hex string");
+    }
+
+    let mut hex_chunks = data.as_bytes().chunks_exact(2);
+    while let Some(chunk) = hex_chunks.next() {
+        let [a, b] = [chunk[0], chunk[1]];
+        let byte = u8::from_str_radix(std::str::from_utf8(&[a, b])?, 16)?;
+        bytes.push(byte);
+    }
+
+    Ok(Bytes::from(bytes))
 }

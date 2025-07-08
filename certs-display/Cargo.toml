@@ -1,0 +1,10 @@
+[package]
+name = "certs-display"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = { workspace = true }
+certs-types = { workspace = true }
+iocraft = { workspace = true }
+serde_json = { workspace = true }

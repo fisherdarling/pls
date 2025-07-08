@@ -1,4 +1,3 @@
-
 use boring::x509::X509;
 use serde::Serialize;
 
@@ -6,7 +5,7 @@ use crate::util::Hex;
 
 /// Serial Number
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
-pub struct Serial(Hex);
+pub struct Serial(pub Hex);
 
 impl Serial {
     pub fn from_cert(cert: &X509) -> Self {
@@ -24,7 +23,7 @@ impl std::fmt::Display for Serial {
 
 /// Authority Key Identifier
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
-pub struct Aki(Hex);
+pub struct Aki(pub Hex);
 
 impl Aki {
     pub fn from_cert(cert: &X509) -> Option<Self> {
@@ -35,7 +34,7 @@ impl Aki {
 
 /// Subject Key Identifier
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
-pub struct Ski(Hex);
+pub struct Ski(pub Hex);
 
 impl Ski {
     pub fn from_cert(cert: &X509) -> Option<Self> {

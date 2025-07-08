@@ -1,9 +1,10 @@
 [workspace]
 members = [
-    "certs-scan-index",
     "certs-cli",
+    "certs-display",
     "certs-parser",
     "certs-scanner",
+    "certs-scan-index",
     "certs-settings",
     "certs-types",
     "simple-progress",
@@ -12,6 +13,12 @@ resolver = "3"
 
 [workspace.dependencies]
 # workspace dependencies
+certs-display = { path = "certs-display" }
+certs-parser = { path = "certs-parser" }
+certs-scanner = { path = "certs-scanner" }
+certs-settings = { path = "certs-settings" }
+certs-types = { path = "certs-types" }
+certs-scan-index = { path = "certs-scan-index" }
 simple-progress = { path = "simple-progress" }
 
 # external dependencies
@@ -28,7 +35,7 @@ boring-sys = { git = "https://github.com/fisherdarling/boring", rev = "0bc15c8cf
     "rpk",
     "pq-experimental",
 ] }
-indicatif = "0.17"
+iocraft = "0.7"
 tokio-boring = { git = "https://github.com/fisherdarling/boring", rev = "0bc15c8cff144aba136cce8741ea74c2cb5dc696" }
 bytes = "1.10"
 clap = { version = "4.5.37", features = ["derive"] }

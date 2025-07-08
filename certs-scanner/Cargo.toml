@@ -14,7 +14,6 @@ globset = { workspace = true }
 kanal = { workspace = true }
 fastrand = "2.3"
 rayon = "1.10"
-certs-parser = { path = "../certs-parser" }
-certs-types = { path = "../certs-types" }
-certs-settings = { path = "../certs-settings" }
-indicatif = { workspace = true }
+certs-parser = { workspace = true }
+certs-types = { workspace = true }
+certs-settings = { workspace = true }
