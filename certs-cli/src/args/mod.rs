@@ -1,9 +1,12 @@
-use crate::{args::scan::ScanArgs, context::OutputFormat};
+use crate::args::scan::ScanArgs;
+use crate::args::parse::ParseArgs;
+use certs_display::OutputFormat;
 use clap::Parser;
 use clap_verbosity_flag::Verbosity;
 use std::path::PathBuf;
 
 mod scan;
+mod parse;
 
 #[derive(Debug, Parser)]
 pub struct Cli {
@@ -29,6 +32,7 @@ impl Cli {
 #[derive(Debug, Parser)]
 pub enum Command {
     Scan(ScanArgs),
+    Parse(ParseArgs),
 }
 
 #[derive(Debug, Parser, Clone, Copy, PartialEq, Eq)]

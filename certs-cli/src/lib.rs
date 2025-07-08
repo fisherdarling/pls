@@ -8,6 +8,7 @@ pub fn run(args: args::Cli) -> anyhow::Result<()> {
 
     match args.command {
         args::Command::Scan(args) => args.run(&ctx)?,
+        args::Command::Parse(args) => args.run(&ctx)?,
     }
 
     Ok(())
