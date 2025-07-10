@@ -5,4 +5,5 @@ mod id;
 mod issuer;
 mod public_key;
 mod sans;
+mod signature;
 mod subject;
