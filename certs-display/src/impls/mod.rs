@@ -1,3 +1,4 @@
+mod cert;
 mod cert_enums;
 mod digests;
 mod expiry;

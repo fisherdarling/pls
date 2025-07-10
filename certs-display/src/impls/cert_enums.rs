@@ -1,4 +1,4 @@
-use certs_types::cert::{CertUsage, CertDepth, CertClassification};
+use certs_types::cert::{CertUsage, CertDepth, CertClassification, BasicConstraints};
 use iocraft::{
     AnyElement, Color, element,
     prelude::{Text, View},
@@ -111,6 +111,49 @@ impl Repr for CertClassification {
             CertDepth::Root => "root",
         };
         obj.insert("depth".to_string(), serde_json::Value::String(depth_str.to_string()));
+        
+        Ok(serde_json::Value::Object(obj))
+    }
+}
+
+impl Repr for BasicConstraints {
+    fn text(&self, _config: &Config) -> anyhow::Result<AnyElement<'static>> {
+        let mut components = Vec::new();
+        
+        components.push(element! { View {
+            Text(content: "  critical: ", color: Color::Green)
+            Text(content: if self.critical { "true" } else { "false" })
+        }});
+        
+        components.push(element! { View {
+            Text(content: "  is_ca: ", color: Color::Green)
+            Text(content: if self.is_ca { "true" } else { "false" })
+        }});
+        
+        if let Some(max_path_length) = self.max_path_length {
+            components.push(element! { View {
+                Text(content: "  max_path_length: ", color: Color::Green)
+                Text(content: max_path_length.to_string())
+            }});
+        }
+
+        Ok(element! { View {
+            Text(content: "basic_constraints:", color: Color::Green)
+            View(gap: 1) {
+                #(components)
+            }
+        }}.into_any())
+    }
+
+    fn json(&self, _config: &Config) -> anyhow::Result<serde_json::Value> {
+        let mut obj = serde_json::Map::new();
+        
+        obj.insert("critical".to_string(), serde_json::Value::Bool(self.critical));
+        obj.insert("is_ca".to_string(), serde_json::Value::Bool(self.is_ca));
+        
+        if let Some(max_path_length) = self.max_path_length {
+            obj.insert("max_path_length".to_string(), serde_json::Value::Number(max_path_length.into()));
+        }
         
         Ok(serde_json::Value::Object(obj))
     }
@@ -250,6 +293,50 @@ mod tests {
             "is_ca": false,
             "authenticates": "server",
             "depth": "leaf"
+        });
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn test_basic_constraints() {
+        let constraints_ca = BasicConstraints {
+            critical: true,
+            is_ca: true,
+            max_path_length: Some(5),
+        };
+
+        // Test text output
+        let mut element = constraints_ca.text(&Config::default()).unwrap();
+        let canvas = element.render(None);
+        let mut output = Vec::new();
+        canvas.write(&mut output).unwrap();
+        let text = String::from_utf8(output).unwrap();
+        
+        assert!(text.contains("basic_constraints:"));
+        assert!(text.contains("critical: true"));
+        assert!(text.contains("is_ca: true"));
+        assert!(text.contains("max_path_length: 5"));
+
+        // Test JSON output
+        let json = constraints_ca.json(&Config::default()).unwrap();
+        let expected = json!({
+            "critical": true,
+            "is_ca": true,
+            "max_path_length": 5
+        });
+        assert_eq!(json, expected);
+
+        // Test leaf certificate constraints (no max_path_length)
+        let constraints_leaf = BasicConstraints {
+            critical: false,
+            is_ca: false,
+            max_path_length: None,
+        };
+
+        let json = constraints_leaf.json(&Config::default()).unwrap();
+        let expected = json!({
+            "critical": false,
+            "is_ca": false
         });
         assert_eq!(json, expected);
     }
