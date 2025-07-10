@@ -3,5 +3,6 @@ mod digests;
 mod expiry;
 mod id;
 mod issuer;
+mod public_key;
 mod sans;
 mod subject;
