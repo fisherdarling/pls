@@ -1,4 +1,4 @@
-use certs_types::key::PublicKey;
+use certs_types::key::{PublicKey, CertPublicKey};
 use iocraft::{
     AnyElement, Color, element,
     prelude::{Text, View},
@@ -102,6 +102,38 @@ impl Repr for PublicKey {
     }
 }
 
+impl Repr for CertPublicKey {
+    fn text(&self, config: &Config) -> anyhow::Result<AnyElement<'static>> {
+        Ok(element! { View {
+            Text(content: "cert_public_key:", color: Color::Green)
+            View(gap: 1) {
+                // Display the embedded public key
+                #(self.key.text(config)?)
+                View {
+                    Text(content: "  spki: ", color: Color::Green)
+                    Text(content: format!("{:?}", self.spki))
+                }
+            }
+        }}.into_any())
+    }
+
+    fn json(&self, config: &Config) -> anyhow::Result<serde_json::Value> {
+        let mut obj = serde_json::Map::new();
+        
+        // Get the public key JSON and merge it
+        if let serde_json::Value::Object(key_obj) = self.key.json(config)? {
+            for (key, value) in key_obj {
+                obj.insert(key, value);
+            }
+        }
+        
+        // Add SPKI
+        obj.insert("spki".to_string(), serde_json::Value::String(format!("{:?}", self.spki)));
+        
+        Ok(serde_json::Value::Object(obj))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use certs_types::{util::Hex, nid::Nid};
@@ -186,5 +218,53 @@ mod tests {
         let json = ed25519_key.json(&Config::default()).unwrap();
         assert_eq!(json.get("type").unwrap(), &json!("ed25519"));
         assert_eq!(json.get("key").unwrap(), &json!("abcd1234"));
+    }
+
+    #[test]
+    fn test_cert_public_key() {
+        use certs_types::key::{KeyUsage, ExtendedKeyUsage};
+        
+        let cert_key = CertPublicKey {
+            usage: KeyUsage {
+                critical: false,
+                digital_signature: true,
+                non_repudiation: false,
+                key_encipherment: false,
+                data_encipherment: false,
+                key_agreement: false,
+                key_cert_sign: false,
+                crl_sign: false,
+                encipher_only: false,
+                decipher_only: false,
+            },
+            extended_usage: ExtendedKeyUsage {
+                critical: false,
+                server_auth: true,
+                client_auth: false,
+                code_signing: false,
+                email_protection: false,
+                time_stamping: false,
+                ocsp_signing: false,
+            },
+            key: PublicKey::Ed25519 {
+                key: Hex::from_hex("abcd1234").unwrap(),
+            },
+            spki: Hex::from_hex("abcd5678").unwrap(),
+        };
+
+        // Test text output
+        let mut element = cert_key.text(&Config::default()).unwrap();
+        let canvas = element.render(None);
+        let mut output = Vec::new();
+        canvas.write(&mut output).unwrap();
+        let text = String::from_utf8(output).unwrap();
+        
+        assert!(text.contains("cert_public_key:"));
+        assert!(text.contains("spki: abcd5678"));
+
+        // Test JSON output
+        let json = cert_key.json(&Config::default()).unwrap();
+        assert_eq!(json.get("type").unwrap(), &json!("ed25519"));
+        assert_eq!(json.get("spki").unwrap(), &json!("abcd5678"));
     }
 }
