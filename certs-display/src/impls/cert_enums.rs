@@ -1,4 +1,4 @@
-use certs_types::cert::{CertUsage, CertDepth};
+use certs_types::cert::{CertUsage, CertDepth, CertClassification};
 use iocraft::{
     AnyElement, Color, element,
     prelude::{Text, View},
@@ -57,6 +57,62 @@ impl Repr for CertDepth {
         };
 
         Ok(serde_json::Value::String(depth_str.to_string()))
+    }
+}
+
+impl Repr for CertClassification {
+    fn text(&self, _config: &Config) -> anyhow::Result<AnyElement<'static>> {
+        Ok(element! { View {
+            Text(content: "classification:", color: Color::Green)
+            View(gap: 1) {
+                View {
+                    Text(content: "  is_ca: ", color: Color::Green)
+                    Text(content: if self.is_ca { "true" } else { "false" })
+                }
+                View {
+                    Text(content: "  authenticates: ", color: Color::Green)
+                    Text(content: match self.authenticates {
+                        CertUsage::Client => "Client",
+                        CertUsage::Server => "Server",
+                        CertUsage::ClientAndServer => "Client and Server",
+                        CertUsage::CA => "Certificate Authority",
+                        CertUsage::Unknown => "Unknown",
+                    })
+                }
+                View {
+                    Text(content: "  depth: ", color: Color::Green)
+                    Text(content: match self.depth {
+                        CertDepth::Leaf => "Leaf",
+                        CertDepth::Intermediate => "Intermediate",
+                        CertDepth::Root => "Root",
+                    })
+                }
+            }
+        }}.into_any())
+    }
+
+    fn json(&self, _config: &Config) -> anyhow::Result<serde_json::Value> {
+        let mut obj = serde_json::Map::new();
+        
+        obj.insert("is_ca".to_string(), serde_json::Value::Bool(self.is_ca));
+        
+        let auth_str = match self.authenticates {
+            CertUsage::Client => "client",
+            CertUsage::Server => "server",
+            CertUsage::ClientAndServer => "client_and_server",
+            CertUsage::CA => "ca",
+            CertUsage::Unknown => "unknown",
+        };
+        obj.insert("authenticates".to_string(), serde_json::Value::String(auth_str.to_string()));
+        
+        let depth_str = match self.depth {
+            CertDepth::Leaf => "leaf",
+            CertDepth::Intermediate => "intermediate",
+            CertDepth::Root => "root",
+        };
+        obj.insert("depth".to_string(), serde_json::Value::String(depth_str.to_string()));
+        
+        Ok(serde_json::Value::Object(obj))
     }
 }
 
@@ -151,5 +207,50 @@ mod tests {
         assert_eq!(depth_leaf.json(&Config::default()).unwrap(), json!("leaf"));
         assert_eq!(depth_intermediate.json(&Config::default()).unwrap(), json!("intermediate"));
         assert_eq!(depth_root.json(&Config::default()).unwrap(), json!("root"));
+    }
+
+    #[test]
+    fn test_cert_classification() {
+        let classification = CertClassification {
+            is_ca: true,
+            authenticates: CertUsage::CA,
+            depth: CertDepth::Root,
+        };
+
+        // Test text output
+        let mut element = classification.text(&Config::default()).unwrap();
+        let canvas = element.render(None);
+        let mut output = Vec::new();
+        canvas.write(&mut output).unwrap();
+        let text = String::from_utf8(output).unwrap();
+        
+        assert!(text.contains("classification:"));
+        assert!(text.contains("is_ca: true"));
+        assert!(text.contains("authenticates: Certificate Authority"));
+        assert!(text.contains("depth: Root"));
+
+        // Test JSON output
+        let json = classification.json(&Config::default()).unwrap();
+        let expected = json!({
+            "is_ca": true,
+            "authenticates": "ca",
+            "depth": "root"
+        });
+        assert_eq!(json, expected);
+
+        // Test leaf certificate
+        let leaf_classification = CertClassification {
+            is_ca: false,
+            authenticates: CertUsage::Server,
+            depth: CertDepth::Leaf,
+        };
+
+        let json = leaf_classification.json(&Config::default()).unwrap();
+        let expected = json!({
+            "is_ca": false,
+            "authenticates": "server",
+            "depth": "leaf"
+        });
+        assert_eq!(json, expected);
     }
 }
