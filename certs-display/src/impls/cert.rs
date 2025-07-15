@@ -1,219 +1,77 @@
 use certs_types::cert::Cert;
 use iocraft::{
-    AnyElement, Color, element,
+    AnyElement, Color, FlexDirection, Props, component, element,
     prelude::{Text, View},
 };
 
-use crate::{Config, Repr};
+use crate::impls::subject::SubjectView;
 
-impl Repr for Cert {
-    fn text(&self, config: &Config) -> anyhow::Result<AnyElement<'static>> {
-        let mut components = Vec::new();
+#[derive(Default, Props)]
+pub(crate) struct CertViewProps {
+    cert: Option<Cert>,
+}
 
-        // Add all the major certificate components
-        components.push(self.subject.text(config)?);
-        components.push(self.issuer.text(config)?);
-        components.push(self.expiry.text(config)?);
-        components.push(self.classification.text(config)?);
-        components.push(self.public_key.text(config)?);
-        
-        // Add signature information
-        components.push(self.signature.text(config)?);
-        
-        // Add fingerprints
-        components.push(self.fingerprints.text(config)?);
-        
-        // Add serial number
-        components.push(self.serial.text(config)?);
-        
-        // Add basic constraints
-        components.push(self.basic_constraints.text(config)?);
-        
-        // Add optional fields if they exist
-        if let Some(ski) = &self.ski {
-            components.push(ski.text(config)?);
-        }
-        
-        if let Some(aki) = &self.aki {
-            components.push(aki.text(config)?);
-        }
-        
-        // Add SANs if they exist
-        if !self.sans.dns.is_empty() || !self.sans.ip.is_empty() || 
-           !self.sans.email.is_empty() || !self.sans.uri.is_empty() {
-            components.push(self.sans.text(config)?);
-        }
+/// End goal is to look similar to:
+/// ```no_test
+///  subject: CN=cloudflare.com
+///      dns: cloudflare.com *.amp.cloudflare.com *.cloudflare.com *.dns.cloudflare.com *.staging.cloudflare.com
+///      ski: ba24f1a98a5769343f9ae873375e8973f06922ee
+///      serial: 6da06fdfa90329010d3dd3414a3c2f28
+///  not before: 2024-11-30T23:15:58Z (7mo 14d ago)
+///  not after:  2025-03-01T00:15:55Z expired 4mo 14d ago
+///  public key: id-ecPublicKey (256 bits)
+///      group: prime256v1
+///      key: 02fc29be7644b44d981051859e504de37fd7dc15cfc33e30f1a00c
+///           5c456c641df5
+///  usage: (critical) digital signature
+///  issuer: C=US, O=Google Trust Services, CN=WE1
+///      aki: 9077923567c4ffa8cca9e67bd980797bcc93f938
+///      signature: ecdsa-with-SHA256
+///          3046022100fe06845bc86825b16dcaf4fbafbd2be220f1be979333
+///          c062c462cbccf12bc569022100c49de269efeeae0a9a29bbf6528f
+///          080f585e3cf4053b8e4452b0746ebbbb645d
+///  fingerprints:
+///      sha256: c800f4e94178afe74079047e82445f10e25cb6f6c235ff2598838f87a985391e
+///      sha1:   c9d6801195cdc64ad7763253fb379317fa9a2d34
+///      md5:    b756f75c428239bd60990a4728eb3bfb
+/// ```
+#[component]
+pub(crate) fn CertView(props: &CertViewProps) -> impl Into<AnyElement<'_>> {
+    let Some(cert) = &props.cert else {
+        return element! { View { Text(content: "no cert", color: Color::Red) } };
+    };
 
-        Ok(element! { View {
-            Text(content: "certificate:", color: Color::Green)
-            View(gap: 1) {
-                #(components)
+    element! {
+        View(flex_direction: FlexDirection::Column) {
+            Text(content: "cert:", color: Color::Green)
+            View(flex_direction: FlexDirection::Column, margin_left: 2) {
+                SubjectView(subject: Some(&cert.subject), sans: Some(&cert.sans), ski: cert.ski.as_ref(), serial: Some(&cert.serial))
+                // TODO: add ValidityView() with the `not before` and `not after`
+                // TODO: add PublicKeyView() with the public key
+                // TODO: add UsageView() with the usage
+                // TODO: add IssuerView() with the issuer
+                // TODO: add FingerprintsView() with the fingerprints
             }
-        }}.into_any())
-    }
-
-    fn json(&self, config: &Config) -> anyhow::Result<serde_json::Value> {
-        let mut obj = serde_json::Map::new();
-        
-        // Add all the certificate components to the JSON object
-        obj.insert("subject".to_string(), self.subject.json(config)?);
-        obj.insert("issuer".to_string(), self.issuer.json(config)?);
-        obj.insert("expiry".to_string(), self.expiry.json(config)?);
-        obj.insert("classification".to_string(), self.classification.json(config)?);
-        obj.insert("public_key".to_string(), self.public_key.json(config)?);
-        obj.insert("signature".to_string(), self.signature.json(config)?);
-        obj.insert("fingerprints".to_string(), self.fingerprints.json(config)?);
-        obj.insert("serial".to_string(), self.serial.json(config)?);
-        obj.insert("basic_constraints".to_string(), self.basic_constraints.json(config)?);
-        
-        // Add optional fields if they exist
-        if let Some(ski) = &self.ski {
-            obj.insert("ski".to_string(), ski.json(config)?);
         }
-        
-        if let Some(aki) = &self.aki {
-            obj.insert("aki".to_string(), aki.json(config)?);
-        }
-        
-        // Add SANs
-        obj.insert("sans".to_string(), self.sans.json(config)?);
-        
-        // Add DER representation
-        obj.insert("der".to_string(), serde_json::Value::String(format!("{:?}", self.der)));
-        
-        Ok(serde_json::Value::Object(obj))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use certs_types::{
-        cert::{CertUsage, CertDepth, CertClassification, BasicConstraints},
-        expiry::Expiry,
-        id::{Serial, Ski, Aki, Digests},
-        issuer::Issuer,
-        key::{PublicKey, CertPublicKey, KeyUsage, ExtendedKeyUsage},
-        sans::Sans,
-        signature::Signature,
-        subject::Subject,
-        util::Hex,
-        nid::Nid,
-    };
-    use iocraft::ElementExt;
-    use jiff::Timestamp;
-    use std::sync::Arc;
-    use boring::nid::Nid as BoringNid;
+    use certs_types::cert::Cert;
+    use iocraft::element;
 
-    use super::*;
+    use crate::impls::{cert::CertView, util::render_to_string};
 
     #[test]
-    fn test_cert_complete() {
-        let cert = Cert {
-            subject: Subject {
-                common_name: Some(Arc::from("example.com")),
-                organization: Some(Arc::from("Example Corp")),
-                organization_unit: Some(Arc::from("IT Department")),
-                country: Some(Arc::from("US")),
-                state: Some(Arc::from("California")),
-            },
-            issuer: Issuer {
-                subject: Subject {
-                    common_name: Some(Arc::from("Example CA")),
-                    organization: Some(Arc::from("Example Corp")),
-                    organization_unit: Some(Arc::from("Certificate Authority")),
-                    country: Some(Arc::from("US")),
-                    state: Some(Arc::from("California")),
-                },
-            },
-            expiry: Expiry {
-                not_before: Timestamp::now(),
-                not_after: Timestamp::now().checked_add(jiff::Span::new().seconds(365 * 24 * 60 * 60)).unwrap(),
-            },
-            classification: CertClassification {
-                is_ca: false,
-                authenticates: CertUsage::Server,
-                depth: CertDepth::Leaf,
-            },
-            public_key: CertPublicKey {
-                usage: KeyUsage {
-                    critical: false,
-                    digital_signature: true,
-                    non_repudiation: false,
-                    key_encipherment: false,
-                    data_encipherment: false,
-                    key_agreement: false,
-                    key_cert_sign: false,
-                    crl_sign: false,
-                    encipher_only: false,
-                    decipher_only: false,
-                },
-                extended_usage: ExtendedKeyUsage {
-                    critical: false,
-                    server_auth: true,
-                    client_auth: false,
-                    code_signing: false,
-                    email_protection: false,
-                    time_stamping: false,
-                    ocsp_signing: false,
-                },
-                key: PublicKey::Ed25519 {
-                    key: Hex::from_hex("abcd1234").unwrap(),
-                },
-                spki: Hex::from_hex("abcd5678").unwrap(),
-            },
-            signature: Signature {
-                alg: Nid::from_boring(BoringNid::SHA256WITHRSAENCRYPTION),
-                value: Hex::from_hex("deadbeef").unwrap(),
-            },
-            fingerprints: Digests {
-                md5: Hex::from_hex("abcd1234").unwrap(),
-                sha1: Hex::from_hex("def567890abcdef0").unwrap(),
-                sha256: Hex::from_hex("1234567890abcdef1234567890abcdef12345678").unwrap(),
-            },
-            serial: Serial(Hex::from_hex("12345678").unwrap()),
-            basic_constraints: BasicConstraints {
-                critical: false,
-                is_ca: false,
-                max_path_length: None,
-            },
-            ski: Some(Ski(Hex::from_hex("abcdef12").unwrap())),
-            aki: Some(Aki(Hex::from_hex("fedcba34").unwrap())),
-            sans: Sans {
-                dns: vec!["example.com".to_string(), "www.example.com".to_string()].into(),
-                ip: vec![].into(),
-                email: vec![].into(),
-                uri: vec![].into(),
-            },
-            der: Hex::from_hex("abcdef56").unwrap(),
-        };
+    fn cert_view() {
+        let cert = Cert::from_pem(include_bytes!(
+            "../../../test-data/certs/cloudflare.com.pem"
+        ))
+        .unwrap();
 
-        // Test text output
-        let mut element = cert.text(&Config::default()).unwrap();
-        let canvas = element.render(None);
-        let mut output = Vec::new();
-        canvas.write(&mut output).unwrap();
-        let text = String::from_utf8(output).unwrap();
-        
-        assert!(text.contains("certificate:"));
-        assert!(text.contains("subject:"));
-        assert!(text.contains("issuer:"));
-        assert!(text.contains("validity:"));
-        assert!(text.contains("classification:"));
-
-        // Test JSON output
-        let json = cert.json(&Config::default()).unwrap();
-        assert!(json.get("subject").is_some());
-        assert!(json.get("issuer").is_some());
-        assert!(json.get("expiry").is_some());
-        assert!(json.get("classification").is_some());
-        assert!(json.get("public_key").is_some());
-        assert!(json.get("signature").is_some());
-        assert!(json.get("fingerprints").is_some());
-        assert!(json.get("serial").is_some());
-        assert!(json.get("basic_constraints").is_some());
-        assert!(json.get("ski").is_some());
-        assert!(json.get("aki").is_some());
-        assert!(json.get("sans").is_some());
-        assert!(json.get("der").is_some());
+        let output = render_to_string(element! { CertView(cert: Some(cert)) });
+        println!("{}", output);
+        insta::assert_snapshot!(output);
     }
 }

@@ -1,0 +1,8 @@
+---
+source: certs-display/src/impls/sans.rs
+expression: output
+---
+dns: example.com
+ip: 127.0.0.1 ::1
+email: test@example.com
+uri: https://example.com

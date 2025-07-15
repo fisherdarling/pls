@@ -1,0 +1,9 @@
+---
+source: certs-types/src/id.rs
+expression: fingerprints
+---
+Digests {
+    md5: 3c12e296f6b962e186b2373a0d4a4b2f,
+    sha1: 54cacee2a8a8c36a0b3f2747e71a60c64c08fc17,
+    sha256: 80c9fd930661b8fed13b5a47109afe328de605c0f7f7d37e3fb26a6165208d4a,
+}

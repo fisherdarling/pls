@@ -1,0 +1,7 @@
+---
+source: certs-display/src/impls/subject.rs
+expression: output
+---
+subject:C=US, ST=California, O=Cloudflare, Inc., OU=Cloudflare, Inc., CN=cloudflare.com
+  ski: n/a
+  serial: n/a

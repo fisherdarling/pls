@@ -33,6 +33,10 @@ impl Hex {
     pub fn from_hex(data: &str) -> anyhow::Result<Self> {
         Ok(Self(decode_hex(data)?))
     }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.as_ref()
+    }
 }
 
 impl From<Hex> for Bytes {

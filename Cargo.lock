@@ -275,8 +275,12 @@ name = "certs-display"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "boring",
+ "bytes",
  "certs-types",
+ "insta",
  "iocraft",
+ "jiff",
  "serde_json",
 ]
 

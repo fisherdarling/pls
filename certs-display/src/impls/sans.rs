@@ -1,121 +1,62 @@
+use iocraft::{AnyElement, FlexDirection, Props, component, element, prelude::View};
+
 use certs_types::sans::Sans;
-use iocraft::{
-    AnyElement, Color, element,
-    prelude::{Text, View},
-};
 
-use crate::{Config, Repr};
+use crate::impls::util::labeled_list;
 
-impl Repr for Sans {
-    fn text(&self, _config: &Config) -> anyhow::Result<AnyElement<'static>> {
-        let dns = (!self.dns.is_empty()).then(|| {
-            element! { View {
-                Text(content: format!("dns: "), color: Color::Green)
-                Text(content: format!("{:?}", self.dns))
-            }}
-        });
+#[derive(Default, Props)]
+pub(crate) struct SansViewProps<'a> {
+    pub(crate) sans: Option<&'a Sans>,
+}
 
-        let ip = (!self.ip.is_empty()).then(|| {
-            element! { View {
-                Text(content: format!("ip: "), color: Color::Green)
-                Text(content: format!("{:?}", self.ip))
-            }}
-        });
+#[component]
+pub(crate) fn SansView<'a>(props: &SansViewProps<'a>) -> impl Into<AnyElement<'a>> {
+    let mut parts = Vec::new();
 
-        let uri = (!self.uri.is_empty()).then(|| {
-            element! { View {
-                Text(content: format!("uri: "), color: Color::Green)
-                Text(content: format!("{:?}", self.uri))
-            }}
-        });
+    if let Some(sans) = &props.sans {
+        if !sans.dns.is_empty() {
+            parts.push(labeled_list("dns:", &sans.dns));
+        }
 
-        let email = (!self.email.is_empty()).then(|| {
-            element! { View {
-                Text(content: format!("email: "), color: Color::Green)
-                Text(content: format!("{:?}", self.email))
-            }}
-        });
+        if !sans.ip.is_empty() {
+            parts.push(labeled_list("ip:", &sans.ip));
+        }
 
-        Ok(element! { View {
-          Text(content: format!("sans: "), color: Color::Green)
-          #(dns)
-          #(ip)
-          #(email)
-          #(uri)
-        }}
-        .into_any())
+        if !sans.email.is_empty() {
+            parts.push(labeled_list("email:", &sans.email));
+        }
+
+        if !sans.uri.is_empty() {
+            parts.push(labeled_list("uri:", &sans.uri));
+        }
     }
-    fn json(&self, _config: &Config) -> anyhow::Result<serde_json::Value> {
-        let mut obj = serde_json::Map::new();
-        if !self.dns.is_empty() {
-            obj.insert(
-                "dns".to_string(),
-                serde_json::Value::Array(
-                    self.dns
-                        .iter()
-                        .map(|s| serde_json::Value::String(s.clone()))
-                        .collect(),
-                ),
-            );
-        }
-        if !self.ip.is_empty() {
-            obj.insert(
-                "ip".to_string(),
-                serde_json::Value::Array(
-                    self.ip
-                        .iter()
-                        .map(|s| serde_json::Value::String(s.to_string()))
-                        .collect(),
-                ),
-            );
-        }
-        if !self.email.is_empty() {
-            obj.insert(
-                "email".to_string(),
-                serde_json::Value::Array(
-                    self.email
-                        .iter()
-                        .map(|s| serde_json::Value::String(s.clone()))
-                        .collect(),
-                ),
-            );
-        }
-        if !self.uri.is_empty() {
-            obj.insert(
-                "uri".to_string(),
-                serde_json::Value::Array(
-                    self.uri
-                        .iter()
-                        .map(|s| serde_json::Value::String(s.clone()))
-                        .collect(),
-                ),
-            );
-        }
 
-        Ok(serde_json::Value::Object(obj))
+    element! {
+        View(flex_direction: FlexDirection::Column) {
+            #(parts)
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use iocraft::ElementExt;
-    use serde_json::json;
+    use std::sync::Arc;
+
+    use crate::impls::util::render_to_string;
 
     use super::*;
 
     #[test]
-    fn test_empty_sans() {
-        let sans = Sans::default();
-        let mut element = sans.text(&Config::default()).unwrap();
-        let canvas = element.render(None);
+    fn sans_view() {
+        let sans = Sans {
+            dns: Arc::new(["example.com".to_string()]),
+            ip: Arc::new(["127.0.0.1".parse().unwrap(), "::1".parse().unwrap()]),
+            email: Arc::new(["test@example.com".to_string()]),
+            uri: Arc::new(["https://example.com".to_string()]),
+        };
 
-        let mut output = Vec::new();
-        canvas.write(&mut output).unwrap();
-
-        let text = String::from_utf8(output).unwrap();
-        assert_eq!(text, "sans:\n");
-
-        let json = sans.json(&Config::default()).unwrap();
-        assert_eq!(json, json!({}));
+        let output = render_to_string(element! { SansView(sans: Some(&sans)) });
+        println!("{}", output);
+        insta::assert_snapshot!(output);
     }
 }

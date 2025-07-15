@@ -11,3 +11,6 @@ certs-types = { workspace = true }
 iocraft = { workspace = true }
 jiff = { workspace = true }
 serde_json = { workspace = true }
+
+[dev-dependencies]
+insta = { workspace = true }

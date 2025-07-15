@@ -1,0 +1,12 @@
+---
+source: certs-types/src/signature.rs
+expression: signature
+---
+Signature {
+    alg: Nid {
+        raw: 794,
+        long_name: "ecdsa-with-SHA256",
+        short_name: "ecdsa-with-SHA256",
+    },
+    value: 3045022100aa8ff1b708c8c18f4ce8d3f74de324bb5b0812d523baf775604bc2108026075502206cc83f021eac56d2ffdff019e3b3041c2aa6fe55ac52b818f0c67d532effb131,
+}

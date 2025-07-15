@@ -1,0 +1,9 @@
+---
+source: certs-display/src/impls/cert.rs
+expression: output
+---
+cert:
+  subject:CN=cloudflare.com
+    dns: cloudflare.com *.amp.cloudflare.com *.cloudflare.com *.dns.cloudflare.com *.staging.cloudflare.com
+    ski: d57aa30bcd572b8dcd3cdb4f1c034d0ceab18ef3
+    serial: 116496321805404369342498699434032008644 (57:A4:60:1D:FD:41:05:68:13:54:BA:97:97:62:8D:C4)

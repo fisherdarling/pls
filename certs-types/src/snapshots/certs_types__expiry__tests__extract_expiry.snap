@@ -1,0 +1,10 @@
+---
+source: certs-types/src/expiry.rs
+expression: expiry
+---
+Ok(
+    Expiry {
+        not_before: 2025-05-27T00:32:04Z,
+        not_after: 2025-08-25T01:32:00Z,
+    },
+)

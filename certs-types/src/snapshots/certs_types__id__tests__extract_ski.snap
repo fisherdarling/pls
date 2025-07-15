@@ -1,0 +1,7 @@
+---
+source: certs-types/src/id.rs
+expression: ski
+---
+Ski(
+    d57aa30bcd572b8dcd3cdb4f1c034d0ceab18ef3,
+)

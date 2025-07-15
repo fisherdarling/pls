@@ -1,0 +1,38 @@
+---
+source: certs-types/src/key.rs
+expression: public_key
+---
+Ok(
+    CertPublicKey {
+        usage: KeyUsage {
+            critical: true,
+            digital_signature: true,
+            non_repudiation: false,
+            key_encipherment: false,
+            data_encipherment: false,
+            key_agreement: false,
+            key_cert_sign: false,
+            crl_sign: false,
+            encipher_only: false,
+            decipher_only: false,
+        },
+        extended_usage: ExtendedKeyUsage {
+            critical: false,
+            server_auth: true,
+            client_auth: false,
+            code_signing: false,
+            email_protection: false,
+            time_stamping: false,
+            ocsp_signing: false,
+        },
+        key: Ec {
+            curve: Nid {
+                raw: 415,
+                long_name: "prime256v1",
+                short_name: "prime256v1",
+            },
+            point: 03a6bec8fe8e12a5223586b0c416b3a92f5c0efca27dcd56202bde5d59bedfb778,
+        },
+        spki: 3059301306072a8648ce3d020106082a8648ce3d03010703420004a6bec8fe8e12a5223586b0c416b3a92f5c0efca27dcd56202bde5d59bedfb778626e851612009c78602b5114e14a8574156db848328bed8231b4c589f0573e77,
+    },
+)

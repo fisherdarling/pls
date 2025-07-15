@@ -1,4 +1,4 @@
-use boring::x509::X509;
+use boring::{bn::BigNum, x509::X509};
 use serde::Serialize;
 
 use crate::util::Hex;
@@ -17,13 +17,34 @@ impl Serial {
 
 impl std::fmt::Display for Serial {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.0)
+        use std::fmt::Write;
+
+        let bn = BigNum::from_hex_str(&format!("{:?}", self.0)).unwrap();
+
+        let dec = bn.to_dec_str().unwrap();
+
+        let mut hex_str = String::new();
+        let bytes = self.0.as_bytes();
+        for (i, byte) in bytes.iter().enumerate() {
+            if i > 0 {
+                hex_str.push(':');
+            }
+            write!(hex_str, "{:02X}", byte)?;
+        }
+
+        write!(f, "{} ({})", dec, hex_str)
     }
 }
 
 /// Authority Key Identifier
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub struct Aki(pub Hex);
+
+impl std::fmt::Display for Aki {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.0)
+    }
+}
 
 impl Aki {
     pub fn from_cert(cert: &X509) -> Option<Self> {
@@ -40,6 +61,12 @@ impl Ski {
     pub fn from_cert(cert: &X509) -> Option<Self> {
         cert.subject_key_id()
             .map(|ski| Self(Hex::from(ski.as_slice())))
+    }
+}
+
+impl std::fmt::Display for Ski {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.0)
     }
 }
 

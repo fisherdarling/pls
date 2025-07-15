@@ -1,6 +1,5 @@
 ---
 source: certs-types/src/key.rs
-assertion_line: 295
 expression: extended_key_usage
 ---
 ExtendedKeyUsage {
