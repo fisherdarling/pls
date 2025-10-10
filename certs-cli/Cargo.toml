@@ -15,10 +15,12 @@ certs-types = { path = "../certs-types" }
 certs-settings = { path = "../certs-settings" }
 certs-parser = { path = "../certs-parser" }
 certs-scanner = { path = "../certs-scanner" }
-certs-scan-index = { path = "../certs-scan-index" }
 clap = { workspace = true, features = ["derive"] }
 clap-verbosity-flag = { workspace = true, features = ["tracing"] }
+jiff = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["json"] }
 kanal = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 simple-progress = { workspace = true }

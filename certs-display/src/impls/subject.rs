@@ -20,16 +20,13 @@ pub(crate) struct SubjectViewProps<'a> {
 
 #[component]
 pub(crate) fn SubjectView<'a>(props: &SubjectViewProps<'a>) -> impl Into<AnyElement<'a>> {
-    let Some(subject) = &props.subject else {
+    let Some(subject) = props.subject else {
         return element! { View { Text(content: "no subject", color: Color::Red) } };
     };
 
     element! {
         View(flex_direction: FlexDirection::Column) {
-            View {
-              Text(content: "subject:", color: Color::Green)
-              Text(content: subject.to_string(), color: Color::Green)
-            }
+            LabeledText::<Subject>(label: "subject:", content: Some(subject))
             View(flex_direction: FlexDirection::Column, margin_left: 2) {
                 SansView(sans: props.sans)
                 LabeledText::<Ski>(label: "ski:", content: props.ski)

@@ -11,6 +11,7 @@ use crate::{
     signature::Signature,
     subject::Subject,
     util::Hex,
+    SpannedPath,
 };
 
 #[derive(Debug, Clone, Serialize)]
@@ -150,6 +151,31 @@ impl BasicConstraints {
             is_ca: basic_constraints.ca,
             max_path_length: basic_constraints.pathlen,
         }
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CertWithPaths {
+    #[serde(flatten)]
+    cert: Cert,
+    paths: Vec<SpannedPath>,
+}
+
+impl CertWithPaths {
+    pub fn new(cert: Cert, paths: Vec<SpannedPath>) -> Self {
+        Self { cert, paths }
+    }
+
+    pub fn add_path(&mut self, path: SpannedPath) {
+        self.paths.push(path);
+    }
+
+    pub fn cert(&self) -> &Cert {
+        &self.cert
+    }
+
+    pub fn paths(&self) -> &[SpannedPath] {
+        self.paths.as_ref()
     }
 }
 

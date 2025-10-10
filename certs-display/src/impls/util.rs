@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use iocraft::{
-    AnyElement, Color, Props, Weight, component, element,
+    AnyElement, Color, FlexDirection, Props, Weight, component, element,
     prelude::{Text, View},
 };
 
@@ -33,7 +33,7 @@ impl<'a, T: Display + Send + Sync + 'static> Default for LabeledTextProps<'a, T>
 
 #[component]
 pub(crate) fn LabeledText<'a, T: Display + Send + Sync + 'static>(
-    props: &LabeledTextProps<'a, T>,
+    props: &mut LabeledTextProps<'a, T>,
 ) -> impl Into<AnyElement<'a>> {
     let Some(content) = props.content else {
         return element! { View(gap: 1) {
@@ -46,6 +46,45 @@ pub(crate) fn LabeledText<'a, T: Display + Send + Sync + 'static>(
         View(gap: 1) {
             Text(content: props.label, color: Color::Green)
             Text(content: content.to_string(), color: Color::Green)
+        }
+    }
+}
+
+#[derive(Props)]
+pub(crate) struct OwnedLabeledTextProps<T: Display + Send + Sync + 'static> {
+    pub(crate) label: String,
+    pub(crate) content: Option<T>,
+    pub(crate) children: Vec<AnyElement<'static>>,
+}
+
+impl<T: Display + Send + Sync + 'static> Default for OwnedLabeledTextProps<T> {
+    fn default() -> Self {
+        Self {
+            label: String::new(),
+            content: None,
+            children: vec![],
+        }
+    }
+}
+
+#[component]
+pub(crate) fn OwnedLabeledText<T: Display + Send + Sync + 'static>(
+    props: &mut OwnedLabeledTextProps<T>,
+) -> impl Into<AnyElement<'static>> {
+    let Some(content) = &props.content else {
+        return element! { View(gap: 1) {
+            Text(content: props.label.as_str(), weight: Weight::Light)
+            Text(content: "n/a", weight: Weight::Light)
+        }};
+    };
+
+    element! {
+        View {
+            View(gap: 1) {
+                Text(content: props.label.as_str(), color: Color::Green)
+                Text(content: content.to_string(), color: Color::Green)
+            }
+            #(props.children.iter_mut())
         }
     }
 }

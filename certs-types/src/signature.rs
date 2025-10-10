@@ -1,10 +1,7 @@
 use boring::x509::X509;
 use serde::Serialize;
 
-use crate::{
-    nid::Nid,
-    util::Hex,
-};
+use crate::{nid::Nid, util::Hex};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Signature {

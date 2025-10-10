@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 pub struct HexDebug<T>(pub T);
 
@@ -17,13 +17,7 @@ where
 }
 
 #[derive(Clone, PartialEq, Hash, Eq, Serialize, Deserialize)]
-pub struct Hex(Bytes);
-
-impl std::fmt::Debug for Hex {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", &HexDebug(&self.0))
-    }
-}
+pub struct Hex(#[serde(serialize_with = "serialize_hex")] Bytes);
 
 impl Hex {
     pub fn new(bytes: Bytes) -> Self {
@@ -36,6 +30,12 @@ impl Hex {
 
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_ref()
+    }
+}
+
+impl std::fmt::Debug for Hex {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", &HexDebug(&self.0))
     }
 }
 
@@ -66,4 +66,14 @@ fn decode_hex(data: &str) -> anyhow::Result<Bytes> {
     }
 
     Ok(Bytes::from(bytes))
+}
+
+pub fn serialize_hex<T, S>(t: &T, s: S) -> Result<S::Ok, S::Error>
+where
+    T: std::fmt::Debug,
+    T: AsRef<[u8]>,
+    S: Serializer,
+{
+    // avoids allocation via `format_args!`
+    s.collect_str(&format!("{:?}", HexDebug(t)))
 }

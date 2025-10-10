@@ -7,3 +7,8 @@ cert:
     dns: cloudflare.com *.amp.cloudflare.com *.cloudflare.com *.dns.cloudflare.com *.staging.cloudflare.com
     ski: d57aa30bcd572b8dcd3cdb4f1c034d0ceab18ef3
     serial: 116496321805404369342498699434032008644 (57:A4:60:1D:FD:41:05:68:13:54:BA:97:97:62:8D:C4)
+  issuer: C=US, O=Google Trust Services, CN=WE1
+    aki: 9077923567c4ffa8cca9e67bd980797bcc93f938
+    signature: ecdsa-with-SHA256
+      3045022100aa8ff1b708c8c18f4ce8d3f74de324bb5b0812d523baf775604bc210802607
+      5502206cc83f021eac56d2ffdff019e3b3041c2aa6fe55ac52b818f0c67d532effb131

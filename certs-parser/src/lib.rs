@@ -2,10 +2,10 @@ use std::ops::Range;
 
 use anyhow::Context;
 use certs_types::{
+    Spanned,
     cert::Cert,
     csr::Csr,
     key::{DhParams, EcPrivateKey, PrivateKey, PublicKey, RsaPrivateKey},
-    Spanned,
 };
 
 mod lexer;
@@ -148,7 +148,6 @@ pub enum ParsedPem {
     PrivateKey(PrivateKey),
     DhParams(DhParams),
 }
-
 
 #[cfg(test)]
 mod tests {

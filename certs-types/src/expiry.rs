@@ -1,9 +1,6 @@
 use anyhow::Context;
 use boring::x509::X509;
-use jiff::{
-    Timestamp,
-    tz::Offset,
-};
+use jiff::{Timestamp, tz::Offset};
 use serde::Serialize;
 
 #[derive(Default, Debug, Clone, Serialize)]

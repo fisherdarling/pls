@@ -41,8 +41,8 @@ use bon::Builder;
 use certs_parser::ParsedItem;
 use certs_settings::CertScanLevels;
 use certs_types::{
-    cert::{Cert, CertDepth},
     Spanned,
+    cert::{Cert, CertDepth},
 };
 use globset::{Glob, GlobSet, GlobSetBuilder};
 use ignore::{DirEntry, WalkBuilder, WalkState};

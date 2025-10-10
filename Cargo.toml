@@ -4,7 +4,6 @@ members = [
     "certs-display",
     "certs-parser",
     "certs-scanner",
-    "certs-scan-index",
     "certs-settings",
     "certs-types",
     "simple-progress",
@@ -18,7 +17,6 @@ certs-parser = { path = "certs-parser" }
 certs-scanner = { path = "certs-scanner" }
 certs-settings = { path = "certs-settings" }
 certs-types = { path = "certs-types" }
-certs-scan-index = { path = "certs-scan-index" }
 simple-progress = { path = "simple-progress" }
 
 # external dependencies
@@ -50,8 +48,10 @@ insta = "1.43"
 memmap2 = "0.9.5"
 jiff = { version = "0.2.13", features = ["serde"] }
 regex = { version = "1" }
+rusqlite = { version = "0.37", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+serde_with = "3.15"
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
 kanal = "0.1.0"

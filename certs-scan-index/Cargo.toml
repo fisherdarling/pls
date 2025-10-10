@@ -1,9 +1,0 @@
-[package]
-name = "certs-scan-index"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-certs-types = { path = "../certs-types" }
-certs-parser = { path = "../certs-parser" }
-ignore = { workspace = true }

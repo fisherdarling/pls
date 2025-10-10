@@ -7,6 +7,7 @@ edition = "2024"
 anyhow = { workspace = true }
 boring = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
+serde_with = { workspace = true }
 jiff = { workspace = true }
 bytes = { workspace = true, features = ["serde"] }
 regex = { workspace = true }
