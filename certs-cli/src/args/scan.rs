@@ -57,7 +57,7 @@ impl ScanArgs {
 
         let mut index = CertIndex::default();
 
-        let pb = ProgressBar::new("{elapsed} scanning {rate} files/s. Total {total}");
+        // let pb = ProgressBar::new("{elapsed} scanning {rate} files/s. Total {total}");
 
         loop {
             let _ = files_seen_rx.drain_into(&mut buffer);
