@@ -7,7 +7,6 @@ edition = "2024"
 anyhow = { workspace = true }
 bon = { workspace = true }
 clap = { version = "4.5.37", features = ["derive"] }
-gxhash = "3.5.0"
 ignore = { version = "0.4.23", features = ["simd-accel"] }
 memmap2 = "0.9.5"
 globset = { workspace = true }

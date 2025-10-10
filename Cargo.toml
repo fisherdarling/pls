@@ -40,7 +40,6 @@ clap = { version = "4.5.37", features = ["derive"] }
 clap-verbosity-flag = { version = "3.0.2", features = ["tracing"] }
 color-eyre = "0.6.3"
 foundations = { version = "4.5", default-features = false }
-gxhash = "3.5.0"
 globset = "0.4.0"
 escape8259 = "0.5.3"
 ignore = { version = "0.4.23", features = ["simd-accel"] }
