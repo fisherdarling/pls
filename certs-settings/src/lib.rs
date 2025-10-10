@@ -104,6 +104,8 @@ fn default_ignore_paths() -> Vec<String> {
         "**/Library/Containers".to_string(),
         #[cfg(target_os = "macos")]
         "**/Applications/Xcode.app".to_string(),
+        "**/build/zammad/spec/fixtures".to_string(),
+        "**/out/boringssl/src".to_string(),
     ]
 }
 
