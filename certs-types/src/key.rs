@@ -1,4 +1,4 @@
-use anyhow::{Context, bail};
+use anyhow::{bail, Context};
 use boring::{
     bn::BigNumContext,
     dh::Dh,
@@ -25,7 +25,12 @@ impl CertPublicKey {
         let key = PublicKey::from_cert(cert)?;
         let usage = KeyUsage::from_cert(cert);
         let extended_usage = ExtendedKeyUsage::from_cert(cert);
-        let spki = Hex::from(cert.public_key().unwrap().public_key_to_der().unwrap());
+        let spki = Hex::from(
+            cert.public_key()
+                .context("unable to get public key")?
+                .public_key_to_der()
+                .context("unable to convert to DER")?,
+        );
         Ok(Self {
             key,
             usage,
@@ -50,7 +55,8 @@ impl PublicKey {
     }
 
     pub fn from_cert(cert: &X509) -> anyhow::Result<Self> {
-        let pk = cert.public_key().unwrap();
+        // todo: log unknown pkeys
+        let pk = cert.public_key().context("unknown public key")?;
         Self::from_boring(pk)
     }
 
@@ -64,17 +70,17 @@ impl PublicKey {
             let mut ctx = BigNumContext::new().unwrap();
             let group = ec.group();
             let form = PointConversionForm::COMPRESSED;
-            let key = ec.public_key().to_bytes(group, form, &mut ctx).unwrap();
+            let key = ec.public_key().to_bytes(group, form, &mut ctx)?;
 
             Ok(Self::Ec {
-                curve: Nid::from_boring(ec.group().curve_name().unwrap()),
+                curve: Nid::from_boring(ec.group().curve_name().context("missing curve name")?),
                 point: Hex::from(key),
             })
         } else if let Ok(_) = pk.dh() {
-            todo!()
+            bail!("todo")
         } else if pk.id() == boring::pkey::Id::ED25519 {
             Ok(Self::Ed25519 {
-                key: Hex::from(pk.raw_public_ed25519_key().unwrap()),
+                key: Hex::from(pk.raw_public_ed25519_key()?),
             })
         } else {
             anyhow::bail!(
@@ -138,7 +144,7 @@ impl EcPrivateKey {
 
     pub fn from_boring(key: EcKey<Private>) -> anyhow::Result<Self> {
         Ok(Self {
-            curve: Nid::from_boring(key.group().curve_name().unwrap()),
+            curve: Nid::from_boring(key.group().curve_name().context("missing curve name")?),
             key: Hex::from(key.private_key().to_vec()),
         })
     }
@@ -164,7 +170,9 @@ impl PrivateKey {
 
     pub fn from_boring(key: PKey<Private>) -> anyhow::Result<Self> {
         if key.nid() == boring::nid::Nid::ED25519 {
-            let key = key.raw_private_ed25519_key().unwrap();
+            let key = key
+                .raw_private_ed25519_key()
+                .context("unable to get raw ed25519 key")?;
             Ok(Self::Ed25519(Ed25519PrivateKey {
                 key: Hex::from(key),
             }))
