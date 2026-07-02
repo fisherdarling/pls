@@ -25,7 +25,12 @@ pub(super) async fn run(cmd: &Connect, format: Format) -> color_eyre::Result<()>
     let time_dns = dns_start.elapsed();
 
     let handshake_start = Instant::now();
-    let udp = tokio::net::UdpSocket::bind("0.0.0.0:0").await?;
+    let bind = if addr.is_ipv6() {
+        "[::]:0"
+    } else {
+        "0.0.0.0:0"
+    };
+    let udp = tokio::net::UdpSocket::bind(bind).await?;
     udp.connect(addr).await?;
     let socket = Socket::try_from(udp).map_err(|e| eyre!("building QUIC socket: {e}"))?;
 
