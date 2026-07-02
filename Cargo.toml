@@ -1,6 +1,6 @@
 [package]
 name = "pls-cli"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 description = "A human-first tool for working with x509 certificates and other WebPKI/TLS primitives."
 repository = "https://github.com/fisherdarling/pls"
@@ -18,15 +18,12 @@ bin-dir = "{ bin }{ binary-ext }"
 [dependencies]
 anyhow = "1.0.95"
 boring = { version = "4.14", features = [
-    "rpk",
-    "pq-experimental",
-    "kx-safe-default",
-    "kx-client-pq-supported",
+  "rpk",
+  "pq-experimental",
+  "kx-safe-default",
+  "kx-client-pq-supported",
 ] }
-boring-sys = { version = "4.14", features = [
-    "rpk",
-    "pq-experimental",
-] }
+boring-sys = { version = "4.14", features = ["rpk", "pq-experimental"] }
 clap = { version = "4.5.23", features = ["derive"] }
 clap-verbosity-flag = { version = "3.0.2", features = ["tracing"] }
 color-eyre = "0.6.3"
@@ -38,11 +35,11 @@ regex = "1.11.1"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.135"
 tokio = { version = "1", default-features = false, features = [
-    "rt",
-    "macros",
-    "net",
-    "time",
-    "rt-multi-thread",
+  "rt",
+  "macros",
+  "net",
+  "time",
+  "rt-multi-thread",
 ] }
 tokio-boring = "4.14"
 tokio-quiche = "0.19"
