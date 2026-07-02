@@ -23,8 +23,7 @@ clap = { version = "4.5.23", features = ["derive"] }
 clap-verbosity-flag = { version = "3.0.2", features = ["tracing"] }
 color-eyre = "0.6.3"
 hex = "0.4.3"
-iocraft = "0.6.4"
-iocraft-macros = "=0.2.2"
+iocraft = "0.8.3"
 jiff = { version = "0.1.21", features = ["serde"] }
 memchr = "2.7.4"
 regex = "1.11.1"
