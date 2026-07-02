@@ -1,0 +1,6 @@
+# Release via GitHub Actions: `cargo release patch` bumps + tags + pushes,
+# then the tag push triggers .github/workflows/release.yml to build binaries.
+# Not a crates.io crate (and [patch.crates-io] is active), so don't publish.
+publish = false
+allow-branch = ["main"]
+tag-name = "v{{version}}"
