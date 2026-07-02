@@ -2,20 +2,28 @@
 name = "pls-cli"
 version = "0.0.1"
 edition = "2021"
+description = "A human-first tool for working with x509 certificates and other WebPKI/TLS primitives."
+repository = "https://github.com/fisherdarling/pls"
+readme = "README.md"
 
 [[bin]]
 name = "pls"
 path = "src/bin/main.rs"
 
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/{ bin }-{ target }{ archive-suffix }"
+pkg-fmt = "tgz"
+bin-dir = "{ bin }{ binary-ext }"
+
 [dependencies]
 anyhow = "1.0.95"
-boring = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717", features = [
+boring = { version = "4.14", features = [
     "rpk",
     "pq-experimental",
     "kx-safe-default",
     "kx-client-pq-supported",
 ] }
-boring-sys = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717", features = [
+boring-sys = { version = "4.14", features = [
     "rpk",
     "pq-experimental",
 ] }
@@ -23,7 +31,7 @@ clap = { version = "4.5.23", features = ["derive"] }
 clap-verbosity-flag = { version = "3.0.2", features = ["tracing"] }
 color-eyre = "0.6.3"
 hex = "0.4.3"
-iocraft = "0.6.4"
+iocraft = "0.8.3"
 jiff = { version = "0.1.21", features = ["serde"] }
 memchr = "2.7.4"
 regex = "1.11.1"
@@ -36,24 +44,22 @@ tokio = { version = "1", default-features = false, features = [
     "time",
     "rt-multi-thread",
 ] }
-tokio-boring = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717" }
+tokio-boring = "4.14"
+tokio-quiche = "0.19"
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
 url = "2.5.4"
 
+[patch.crates-io]
+boring = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717" }
+boring-sys = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717" }
+tokio-boring = { git = "https://github.com/fisherdarling/boring", rev = "651ab50e2f9ed7ce67d54bf8b706dff4a0eef717" }
+
+# Local boring dev (uncomment to build against a checkout):
 # [patch.crates-io]
-# boring = { path = "../../Opensource/boring/boring", features = [
-#     "rpk",
-#     "pq-experimental",
-#     "kx-safe-default",
-#     "kx-client-pq-supported",
-# ] }
-# boring-sys = { path = "../../Opensource/boring/boring-sys", features = [
-#     "rpk",
-#     "pq-experimental",
-#     "kx-safe-default",
-#     "kx-client-pq-supported",
-# ] }
+# boring = { path = "../../Opensource/boring/boring" }
+# boring-sys = { path = "../../Opensource/boring/boring-sys" }
+# tokio-boring = { path = "../../Opensource/boring/tokio-boring" }
 
 [profile.release]
 debug = true

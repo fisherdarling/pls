@@ -169,20 +169,19 @@ fn ValidityView(props: &ValidityProps) -> impl Into<AnyElement<'static>> {
     let expired = now >= props.validity.not_after;
 
     // todo: add time validity:
-    let _is_valid_text = props
-        .validity
-        .valid
-        .unwrap_or(!expired)
-        .then(|| {
+    let _is_valid_text = if props.validity.valid.unwrap_or(!expired) {
+        {
             element! {
                 Text(content: "✅")
             }
-        })
-        .unwrap_or_else(|| {
+        }
+    } else {
+        {
             element! {
                 Text(content: format!("🚨 {}", props.validity.verify_result.clone().unwrap_or_default()), color: Color::Red, decoration: TextDecoration::Underline)
             }
-        });
+        }
+    };
 
     let verify_result_text = props.validity.verify_result.clone().map(|result| {
         element! {
@@ -304,11 +303,11 @@ pub fn SignatureView(props: &SignatureProps) -> impl Into<AnyElement<'static>> {
     element! {
         View(flex_direction: FlexDirection::Column) {
             View(gap: 1) {
-                #(props.top_level.then(|| element! {
+                #(if props.top_level { element! {
                     Text(content: "signature:", color: TOP_LEVEL_COLOR)
-                }).unwrap_or_else(|| element! {
+                } } else { element! {
                     Text(content: "signature:")
-                }))
+                } })
                 Text(content: props.signature.algorithm.clone())
             }
             View(margin_left: 4, width: KEY_WIDTH) {
@@ -411,14 +410,14 @@ pub fn UsageView(props: &UsageProps) -> impl Into<AnyElement<'static>> {
 
     let key_usage = element! {
         View(gap: 1) {
-            #(props.key_usage.critical.then(|| element! {
+            #(if props.key_usage.critical { element! {
                 View(gap: 1) {
                     Text(content: "usage:", color: TOP_LEVEL_COLOR)
                     Text(content: "(critical)")
                 }
-            }.into_any()).unwrap_or_else(|| element! {
+            }.into_any() } else { element! {
                 Text(content: "usage: ", color: TOP_LEVEL_COLOR)
-            }.into_any()))
+            }.into_any() })
             Text(content: key_usage_text, color: HIGHLIGHT_COLOR)
         }
     };
