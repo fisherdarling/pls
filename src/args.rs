@@ -16,7 +16,7 @@ use clap::{Parser, Subcommand};
 ///
 /// pls connect https://example.com
 #[derive(Default, Debug, Parser)]
-#[command(name = "pls", version = "0.1", author = "Fisher")]
+#[command(version, name = "pls", author = "Fisher")]
 pub struct Cli {
     /// Sets the level of verbosity (-v, -vv, -vvv, etc.)
     #[command(flatten)]
