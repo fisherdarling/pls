@@ -11,7 +11,7 @@ name = "pls"
 path = "src/bin/main.rs"
 
 [package.metadata.binstall]
-pkg-url = "{ repo }/releases/download/v{ version }/{ bin }-{ target }{ archive-suffix }"
+pkg-url = "{ repo }/releases/download/v{ version }/pls-{ target }{ archive-suffix }"
 pkg-fmt = "tgz"
 bin-dir = "{ bin }{ binary-ext }"
 
