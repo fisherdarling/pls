@@ -12,7 +12,7 @@ use super::{CommandExt, Format};
 /// Parse and report all discoverable x509 or DER encoded entities from a file
 /// or stdin. The `--json` output for this command will output an object of:
 ///
-/// ```
+/// ```text
 /// { certs: ..., csrs: ..., private_keys: ... }
 /// ```
 ///

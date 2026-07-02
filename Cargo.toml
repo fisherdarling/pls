@@ -2,10 +2,18 @@
 name = "pls-cli"
 version = "0.0.1"
 edition = "2021"
+description = "A human-first tool for working with x509 certificates and other WebPKI/TLS primitives."
+repository = "https://github.com/fisherdarling/pls"
+readme = "README.md"
 
 [[bin]]
 name = "pls"
 path = "src/bin/main.rs"
+
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/{ bin }-{ target }{ archive-suffix }"
+pkg-fmt = "tgz"
+bin-dir = "{ bin }{ binary-ext }"
 
 [dependencies]
 anyhow = "1.0.95"

@@ -71,7 +71,17 @@ As long as the `----BEGIN` and `----END` "headers" exist somewhere in the file, 
 
 # Installation
 
-Right now `pls` only supports Rust toolchain based installation:
+### prebuilt binaries / `cargo binstall`
+
+See the [GitHub releases](https://github.com/fisherdarling/pls/releases) for prebuilt binaries.
+
+Or use [`cargo-binstall`](https://github.com/cargo-bins/cargo-binstall):
+
+```
+cargo binstall --git https://github.com/fisherdarling/pls pls-cli
+```
+
+### From source
 
 ```
 cargo install --locked --git https://github.com/fisherdarling/pls
