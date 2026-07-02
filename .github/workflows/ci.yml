@@ -31,6 +31,16 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Test
         run: cargo test --locked
+      - name: Build
+        run: cargo build --locked
+      - name: Smoke test against cloudflare.com
+        run: |
+          set -euxo pipefail
+          bin=target/debug/pls
+          "$bin" connect cloudflare.com
+          "$bin" connect --pqc cloudflare.com
+          "$bin" connect --quic cloudflare.com
+          "$bin" connect --quic --pqc cloudflare.com
 
   lint:
     name: Rustfmt & Clippy
