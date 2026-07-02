@@ -1,6 +1,6 @@
 [package]
 name = "pls-cli"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2021"
 description = "A human-first tool for working with x509 certificates and other WebPKI/TLS primitives."
 repository = "https://github.com/fisherdarling/pls"
