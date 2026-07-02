@@ -32,7 +32,6 @@ pub struct Time {
 pub enum Transport {
     #[default]
     TCP,
-    #[allow(unused)]
     QUIC,
 }
 
