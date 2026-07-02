@@ -47,8 +47,19 @@ pub fn TlsConnectionView(props: &TlsConnectionProps) -> impl Into<AnyElement<'st
                 }
                 View(gap: 1) {
                     Text(content: format!("dns: {:.2?},", props.tls.time.dns))
-                    Text(content: format!("connect: {:.2?},", props.tls.time.connect))
-                    Text(content: format!("secure: {:.2?}", props.tls.time.tls))
+                    #(match props.tls.time.connect {
+                        Some(connect) => element! {
+                            View(gap: 1) {
+                                Text(content: format!("connect: {:.2?},", connect))
+                                Text(content: format!("secure: {:.2?}", props.tls.time.tls))
+                            }
+                        },
+                        None => element! {
+                            View() {
+                                Text(content: format!("handshake: {:.2?}", props.tls.time.tls))
+                            }
+                        },
+                    })
                 }
             }
         }

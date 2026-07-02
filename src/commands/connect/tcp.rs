@@ -47,7 +47,7 @@ pub(super) async fn run(cmd: &Connect, format: Format) -> color_eyre::Result<()>
 
     let time = Time {
         dns: time_dns,
-        connect: time_connect,
+        connect: Some(time_connect),
         tls: time_tls,
     };
 

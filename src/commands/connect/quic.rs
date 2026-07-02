@@ -25,10 +25,9 @@ pub(super) async fn run(cmd: &Connect, format: Format) -> color_eyre::Result<()>
     let (hostname, addr) = parse_host(&cmd.host);
     let time_dns = dns_start.elapsed();
 
-    let connect_start = Instant::now();
+    let handshake_start = Instant::now();
     let udp = tokio::net::UdpSocket::bind("0.0.0.0:0").await?;
     udp.connect(addr).await?;
-    let time_connect = connect_start.elapsed();
     let socket = Socket::try_from(udp).map_err(|e| eyre!("building QUIC socket: {e}"))?;
 
     let mut settings = QuicSettings::default();
@@ -54,7 +53,7 @@ pub(super) async fn run(cmd: &Connect, format: Format) -> color_eyre::Result<()>
         want_chain: cmd.chain,
         no_cert: cmd.no_cert,
         time_dns,
-        time_connect,
+        handshake_start,
         buf: vec![0u8; 64 * 1024],
     };
 
@@ -108,7 +107,7 @@ struct InspectApp {
     want_chain: bool,
     no_cert: bool,
     time_dns: Duration,
-    time_connect: Duration,
+    handshake_start: Instant,
     buf: Vec<u8>,
 }
 
@@ -116,7 +115,7 @@ impl ApplicationOverQuic for InspectApp {
     fn on_conn_established(
         &mut self,
         qconn: &mut QuicheConnection,
-        handshake_info: &HandshakeInfo,
+        _handshake_info: &HandshakeInfo,
     ) -> QuicResult<()> {
         // Copy the DER certs before borrowing `qconn` mutably for the SslRef.
         let der_chain: Vec<Vec<u8>> = if self.want_chain {
@@ -133,8 +132,8 @@ impl ApplicationOverQuic for InspectApp {
 
         let time = Time {
             dns: self.time_dns,
-            connect: self.time_connect,
-            tls: handshake_info.elapsed(),
+            connect: None,
+            tls: self.handshake_start.elapsed(),
         };
 
         let ssl = qconn.as_mut();

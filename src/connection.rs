@@ -21,8 +21,11 @@ pub struct Connection {
 pub struct Time {
     #[serde(serialize_with = "serialize_duration")]
     pub dns: Duration,
-    #[serde(serialize_with = "serialize_duration")]
-    pub connect: Duration,
+    #[serde(
+        serialize_with = "serialize_opt_duration",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub connect: Option<Duration>,
     #[serde(serialize_with = "serialize_duration")]
     pub tls: Duration,
 }
@@ -46,6 +49,13 @@ where
             .round()
             .div(1_000.0),
     )
+}
+
+fn serialize_opt_duration<S>(duration: &Option<Duration>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    serialize_duration(duration.as_ref().unwrap(), serializer)
 }
 
 impl From<(Transport, Time, &SslRef)> for Connection {
