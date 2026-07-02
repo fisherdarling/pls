@@ -1,4 +1,4 @@
-use std::net::{SocketAddr, ToSocketAddrs};
+use std::net::{IpAddr, SocketAddr, ToSocketAddrs};
 
 use boring::ssl::SslContextBuilder;
 use clap::Parser;
@@ -92,6 +92,15 @@ pub(crate) fn parse_host(host: &str) -> color_eyre::Result<(String, SocketAddr)>
         return Ok((addr.ip().to_string(), addr));
     }
 
+    let bare = host
+        .strip_prefix('[')
+        .and_then(|h| h.strip_suffix(']'))
+        .unwrap_or(host);
+    if let Ok(ip) = bare.parse::<IpAddr>() {
+        tracing::debug!("parsed {host} as bare IP address");
+        return Ok((ip.to_string(), SocketAddr::new(ip, 443)));
+    }
+
     if let Ok(url) = host.parse::<Url>() {
         // If the host is a valid URL, extract the host and port
 
@@ -129,4 +138,29 @@ pub(crate) fn parse_host(host: &str) -> color_eyre::Result<(String, SocketAddr)>
         .next()
         .ok_or_else(|| eyre!("{hostname}:{port} resolved to no addresses"))?;
     Ok((hostname.to_string(), addr))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_host;
+
+    #[test]
+    fn parses_ipv6() {
+        // Bare IPv6, default port.
+        let (host, addr) = parse_host("::1").unwrap();
+        assert_eq!(host, "::1");
+        assert_eq!(addr.to_string(), "[::1]:443");
+
+        // Bracketed IPv6, default port.
+        let (_, addr) = parse_host("[2001:db8::1]").unwrap();
+        assert_eq!(addr.to_string(), "[2001:db8::1]:443");
+
+        // Bracketed IPv6 with explicit port.
+        let (_, addr) = parse_host("[::1]:8443").unwrap();
+        assert_eq!(addr.to_string(), "[::1]:8443");
+
+        // IPv4 still works.
+        let (_, addr) = parse_host("1.2.3.4:80").unwrap();
+        assert_eq!(addr.to_string(), "1.2.3.4:80");
+    }
 }
