@@ -88,6 +88,7 @@ impl CommandExt for Connect {
 pub(crate) fn parse_host(host: &str) -> (String, SocketAddr) {
     if let Ok(addr) = host.parse::<SocketAddr>() {
         // If the host is already a valid IP address, return it as-is
+        tracing::debug!("parsed {host} as socket address");
         return (addr.ip().to_string(), addr);
     }
 
@@ -98,6 +99,7 @@ pub(crate) fn parse_host(host: &str) -> (String, SocketAddr) {
         // `cloudflare.com:443` parses as a url with no host and a scheme of
         // `cloudflare.com`. This check is to ensure that the host exists
         if url.host().is_some() {
+            tracing::debug!("parsed {host} as URL");
             return (
                 url.host_str().unwrap().to_string(),
                 url.socket_addrs(|| Some(443)).unwrap()[0],
@@ -117,6 +119,7 @@ pub(crate) fn parse_host(host: &str) -> (String, SocketAddr) {
 
     // Resolve the hostname to an IP address
     // todo: handle errors here
+    tracing::debug!("parsed {host} as hostname:port ({hostname}:{port})");
     (
         hostname.to_string(),
         (hostname, port).to_socket_addrs().unwrap().next().unwrap(),

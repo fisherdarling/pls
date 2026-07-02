@@ -15,10 +15,12 @@ pub(super) async fn run(cmd: &Connect, format: Format) -> color_eyre::Result<()>
     let dns_start = Instant::now();
     let (hostname, addr) = parse_host(&cmd.host);
     let time_dns = dns_start.elapsed();
+    tracing::info!("resolved {hostname} -> {addr} in {time_dns:?}, connecting via TCP");
 
     let connect_start = Instant::now();
     let stream = tokio::net::TcpStream::connect(addr).await?;
     let time_connect = connect_start.elapsed();
+    tracing::debug!("TCP established in {time_connect:?}");
 
     let mut connector_builder = if cmd.rpk {
         SslConnector::rpk_builder()?
@@ -39,6 +41,11 @@ pub(super) async fn run(cmd: &Connect, format: Format) -> color_eyre::Result<()>
     let tls_start = Instant::now();
     let tls = tokio_boring::connect(connector.configure()?, &hostname, stream).await?;
     let time_tls = tls_start.elapsed();
+    tracing::debug!(
+        "TLS handshake completed in {time_tls:?}: {:?}, {}",
+        tls.ssl().version_str(),
+        tls.ssl().current_cipher().map(|c| c.name()).unwrap_or("?"),
+    );
 
     let time = Time {
         dns: time_dns,

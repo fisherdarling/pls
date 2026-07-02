@@ -23,6 +23,7 @@ pub(super) async fn run(cmd: &Connect, format: Format) -> color_eyre::Result<()>
     let dns_start = Instant::now();
     let (hostname, addr) = parse_host(&cmd.host);
     let time_dns = dns_start.elapsed();
+    tracing::info!("resolved {hostname} -> {addr} in {time_dns:?}, connecting via QUIC");
 
     let handshake_start = Instant::now();
     let bind = if addr.is_ipv6() {
@@ -125,6 +126,7 @@ impl ApplicationOverQuic for InspectApp {
             connect: None,
             tls: self.handshake_start.elapsed(),
         };
+        tracing::debug!("QUIC handshake completed in {:?}", time.tls);
 
         let ssl = qconn.as_mut();
         let verify_result = ssl.verify_result();
