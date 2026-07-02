@@ -2,7 +2,7 @@ use std::net::{SocketAddr, ToSocketAddrs};
 
 use boring::ssl::SslContextBuilder;
 use clap::Parser;
-use color_eyre::eyre::Context;
+use color_eyre::eyre::{eyre, Context};
 use url::Url;
 
 use super::{CommandExt, Format};
@@ -85,43 +85,48 @@ impl CommandExt for Connect {
 }
 
 /// Parse the host string into a hostname and SocketAddr.
-pub(crate) fn parse_host(host: &str) -> (String, SocketAddr) {
+pub(crate) fn parse_host(host: &str) -> color_eyre::Result<(String, SocketAddr)> {
     if let Ok(addr) = host.parse::<SocketAddr>() {
         // If the host is already a valid IP address, return it as-is
         tracing::debug!("parsed {host} as socket address");
-        return (addr.ip().to_string(), addr);
+        return Ok((addr.ip().to_string(), addr));
     }
 
     if let Ok(url) = host.parse::<Url>() {
         // If the host is a valid URL, extract the host and port
-        // todo: handle errors here and different ports:
 
         // `cloudflare.com:443` parses as a url with no host and a scheme of
         // `cloudflare.com`. This check is to ensure that the host exists
         if url.host().is_some() {
             tracing::debug!("parsed {host} as URL");
-            return (
-                url.host_str().unwrap().to_string(),
-                url.socket_addrs(|| Some(443)).unwrap()[0],
-            );
+            let addrs = url
+                .socket_addrs(|| Some(443))
+                .with_context(|| format!("resolving URL host {host:?}"))?;
+            let addr = addrs
+                .into_iter()
+                .next()
+                .ok_or_else(|| eyre!("URL host {host:?} resolved to no addresses"))?;
+            // host_str() is Some whenever host() is Some (checked above).
+            return Ok((url.host_str().unwrap().to_string(), addr));
         }
     }
 
     // If the host is not a valid IP address or URL, assume it is a hostname
-    let (hostname, port) = if let Some(port) = host.split(':').nth(1) {
-        (
-            host.split(':').next().unwrap(),
-            port.parse::<u16>().unwrap(), // todo: handle parse error
-        )
+    let (hostname, port) = if let Some((hostname, port)) = host.split_once(':') {
+        let port = port
+            .parse::<u16>()
+            .with_context(|| format!("parsing port {port:?} in host {host:?}"))?;
+        (hostname, port)
     } else {
         (host, 443)
     };
 
     // Resolve the hostname to an IP address
-    // todo: handle errors here
     tracing::debug!("parsed {host} as hostname:port ({hostname}:{port})");
-    (
-        hostname.to_string(),
-        (hostname, port).to_socket_addrs().unwrap().next().unwrap(),
-    )
+    let addr = (hostname, port)
+        .to_socket_addrs()
+        .with_context(|| format!("resolving {hostname}:{port}"))?
+        .next()
+        .ok_or_else(|| eyre!("{hostname}:{port} resolved to no addresses"))?;
+    Ok((hostname.to_string(), addr))
 }

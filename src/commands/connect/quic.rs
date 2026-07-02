@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 
 use boring::ssl::{SslContextBuilder, SslMethod, SslVerifyMode};
 use boring::x509::X509;
-use color_eyre::eyre::eyre;
+use color_eyre::eyre::{eyre, Context};
 use tokio::sync::oneshot;
 use tokio_quiche::quic::{ConnectionHook, HandshakeInfo, QuicheConnection};
 use tokio_quiche::settings::{CertificateKind, Hooks, QuicSettings, TlsCertificatePaths};
@@ -21,7 +21,7 @@ use super::{parse_host, Connect};
 
 pub(super) async fn run(cmd: &Connect, format: Format) -> color_eyre::Result<()> {
     let dns_start = Instant::now();
-    let (hostname, addr) = parse_host(&cmd.host);
+    let (hostname, addr) = parse_host(&cmd.host)?;
     let time_dns = dns_start.elapsed();
     tracing::info!("resolved {hostname} -> {addr} in {time_dns:?}, connecting via QUIC");
 
@@ -31,8 +31,12 @@ pub(super) async fn run(cmd: &Connect, format: Format) -> color_eyre::Result<()>
     } else {
         "0.0.0.0:0"
     };
-    let udp = tokio::net::UdpSocket::bind(bind).await?;
-    udp.connect(addr).await?;
+    let udp = tokio::net::UdpSocket::bind(bind)
+        .await
+        .with_context(|| format!("binding UDP socket to {bind}"))?;
+    udp.connect(addr)
+        .await
+        .with_context(|| format!("connecting UDP socket to {hostname} ({addr})"))?;
     let socket = Socket::try_from(udp).map_err(|e| eyre!("building QUIC socket: {e}"))?;
 
     let mut settings = QuicSettings::default();

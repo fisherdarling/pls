@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use boring::ssl::{SslConnector, SslMethod, SslVerifyMode};
+use color_eyre::eyre::Context;
 
 use crate::commands::Format;
 use crate::components::connection::{print_tls_connection_with_certs, ConnectionWithCerts};
@@ -13,19 +14,21 @@ use super::{parse_host, Connect};
 /// connection + certificate information.
 pub(super) async fn run(cmd: &Connect, format: Format) -> color_eyre::Result<()> {
     let dns_start = Instant::now();
-    let (hostname, addr) = parse_host(&cmd.host);
+    let (hostname, addr) = parse_host(&cmd.host)?;
     let time_dns = dns_start.elapsed();
     tracing::info!("resolved {hostname} -> {addr} in {time_dns:?}, connecting via TCP");
 
     let connect_start = Instant::now();
-    let stream = tokio::net::TcpStream::connect(addr).await?;
+    let stream = tokio::net::TcpStream::connect(addr)
+        .await
+        .with_context(|| format!("TCP connect to {hostname} ({addr})"))?;
     let time_connect = connect_start.elapsed();
     tracing::debug!("TCP established in {time_connect:?}");
 
     let mut connector_builder = if cmd.rpk {
-        SslConnector::rpk_builder()?
+        SslConnector::rpk_builder().context("building RPK SSL connector")?
     } else {
-        SslConnector::builder(SslMethod::tls_client())?
+        SslConnector::builder(SslMethod::tls_client()).context("building SSL connector")?
     };
 
     if !cmd.rpk {
@@ -39,7 +42,12 @@ pub(super) async fn run(cmd: &Connect, format: Format) -> color_eyre::Result<()>
     // handle connection failure and print error to user:
     // todo(fisher): fix RPK connections. Are we required to set the raw public key?
     let tls_start = Instant::now();
-    let tls = tokio_boring::connect(connector.configure()?, &hostname, stream).await?;
+    let config = connector
+        .configure()
+        .context("configuring TLS connection")?;
+    let tls = tokio_boring::connect(config, &hostname, stream)
+        .await
+        .with_context(|| format!("TLS handshake with {hostname} ({addr})"))?;
     let time_tls = tls_start.elapsed();
     tracing::debug!(
         "TLS handshake completed in {time_tls:?}: {:?}, {}",
