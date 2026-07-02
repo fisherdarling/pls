@@ -29,8 +29,7 @@ pub(super) async fn run(cmd: &Connect, format: Format) -> color_eyre::Result<()>
     let udp = tokio::net::UdpSocket::bind("0.0.0.0:0").await?;
     udp.connect(addr).await?;
     let time_connect = connect_start.elapsed();
-    let socket =
-        Socket::try_from(udp).map_err(|e| eyre!("building QUIC socket: {e}"))?;
+    let socket = Socket::try_from(udp).map_err(|e| eyre!("building QUIC socket: {e}"))?;
 
     let mut settings = QuicSettings::default();
     settings.handshake_timeout = Some(Duration::from_secs(10));
@@ -47,8 +46,7 @@ pub(super) async fn run(cmd: &Connect, format: Format) -> color_eyre::Result<()>
         private_key: "",
         kind: CertificateKind::X509,
     };
-    let params =
-        ConnectionParams::new_client(settings, Some(placeholder_cert), hooks);
+    let params = ConnectionParams::new_client(settings, Some(placeholder_cert), hooks);
 
     let (tx, rx) = oneshot::channel();
     let app = InspectApp {
@@ -61,10 +59,9 @@ pub(super) async fn run(cmd: &Connect, format: Format) -> color_eyre::Result<()>
     };
 
     // Hold the handle so the connection stays up until the handshake completes.
-    let _quic_conn =
-        tokio_quiche::quic::connect_with_config(socket, Some(&hostname), &params, app)
-            .await
-            .map_err(|e| eyre!("QUIC connection to {hostname} failed: {e}"))?;
+    let _quic_conn = tokio_quiche::quic::connect_with_config(socket, Some(&hostname), &params, app)
+        .await
+        .map_err(|e| eyre!("QUIC connection to {hostname} failed: {e}"))?;
 
     let connection = rx.await.map_err(|_| {
         eyre!("QUIC handshake to {hostname} did not complete; the server may not support HTTP/3 (ALPN h3)")
@@ -97,9 +94,7 @@ impl ConnectionHook for TlsHook {
         let curves = CString::new(curves).ok()?;
         // SAFETY: `builder` owns a live `SSL_CTX` and `curves` is a valid,
         // NUL-terminated C string that outlives the call.
-        let rc = unsafe {
-            boring_sys::SSL_CTX_set1_curves_list(builder.as_ptr(), curves.as_ptr())
-        };
+        let rc = unsafe { boring_sys::SSL_CTX_set1_curves_list(builder.as_ptr(), curves.as_ptr()) };
         if rc != 1 {
             return None;
         }
@@ -130,7 +125,10 @@ impl ApplicationOverQuic for InspectApp {
                 .map(|chain| chain.iter().map(|der| der.to_vec()).collect())
                 .unwrap_or_default()
         } else {
-            qconn.peer_cert().map(|der| vec![der.to_vec()]).unwrap_or_default()
+            qconn
+                .peer_cert()
+                .map(|der| vec![der.to_vec()])
+                .unwrap_or_default()
         };
 
         let time = Time {
