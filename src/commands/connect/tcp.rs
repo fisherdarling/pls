@@ -1,7 +1,6 @@
 use std::time::Instant;
 
 use boring::ssl::{SslConnector, SslMethod, SslVerifyMode};
-use color_eyre::eyre::Context;
 
 use crate::commands::Format;
 use crate::components::connection::{print_tls_connection_with_certs, ConnectionWithCerts};
@@ -31,11 +30,7 @@ pub(super) async fn run(cmd: &Connect, format: Format) -> color_eyre::Result<()>
         connector_builder.set_verify(SslVerifyMode::NONE);
     }
 
-    if let Some(curve_list) = &cmd.curves {
-        connector_builder
-            .set_cipher_list(curve_list)
-            .with_context(|| format!("Setting curve list to: {curve_list:?}"))?;
-    }
+    super::set_curves(&mut connector_builder, cmd.curves())?;
 
     let connector = connector_builder.build();
 

@@ -20,8 +20,6 @@ anyhow = "1.0.95"
 boring = { version = "4.14", features = [
   "rpk",
   "pq-experimental",
-  "kx-safe-default",
-  "kx-client-pq-supported",
 ] }
 boring-sys = { version = "4.14", features = ["rpk", "pq-experimental"] }
 clap = { version = "4.5.23", features = ["derive"] }

@@ -1,4 +1,3 @@
-use std::ffi::CString;
 use std::future::Future;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -35,7 +34,7 @@ pub(super) async fn run(cmd: &Connect, format: Format) -> color_eyre::Result<()>
 
     // The hook only fires when `tls_cert` is `Some`, so pass placeholder paths.
     let hook: Arc<dyn ConnectionHook + Send + Sync> = Arc::new(TlsHook {
-        curves: cmd.curves.clone(),
+        curves: cmd.curves().map(str::to_owned),
     });
     let hooks = Hooks {
         connection_hook: Some(hook),
@@ -69,11 +68,6 @@ pub(super) async fn run(cmd: &Connect, format: Format) -> color_eyre::Result<()>
     print_tls_connection_with_certs(connection, format)
 }
 
-/// quiche bypasses the boring fork's per-connection curve setup, so mirror its
-/// client list on the context to offer the same PQC hybrids as the TCP path.
-const PQC_CLIENT_CURVES: &str =
-    "X25519:P-256:P-384:P-521:X25519MLKEM768:X25519Kyber768Draft00:P256Kyber768Draft00";
-
 struct TlsHook {
     curves: Option<String>,
 }
@@ -87,16 +81,7 @@ impl ConnectionHook for TlsHook {
         builder.set_default_verify_paths().ok()?;
         builder.set_verify(SslVerifyMode::NONE);
 
-        // `set_curves_list` is compiled out under the fork's `kx-safe-default`
-        // feature, so set them on the context directly via FFI.
-        let curves = self.curves.as_deref().unwrap_or(PQC_CLIENT_CURVES);
-        let curves = CString::new(curves).ok()?;
-        // SAFETY: `builder` owns a live `SSL_CTX` and `curves` is a valid,
-        // NUL-terminated C string that outlives the call.
-        let rc = unsafe { boring_sys::SSL_CTX_set1_curves_list(builder.as_ptr(), curves.as_ptr()) };
-        if rc != 1 {
-            return None;
-        }
+        super::set_curves(&mut builder, self.curves.as_deref()).ok()?;
 
         Some(builder)
     }
